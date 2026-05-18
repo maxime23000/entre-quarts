@@ -1952,6 +1952,7 @@
                 <div class="title" id="app-title">Entre Quarts</div>
             </div>
             <div class="header-buttons">
+                <span id="sync-status" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;min-width:110px;text-align:right;"></span>
                 <button class="btn-mode" onclick="toggleDarkMode()"><i data-lucide="moon"></i> Mode</button>
                 <button class="btn-config" onclick="ouvrirConfig()"><i data-lucide="settings"></i> Paramètres</button>
                 <button class="btn-nouveau" onclick="nouveau()"><i data-lucide="file-plus"></i> Nouveau</button>
@@ -2061,110 +2062,83 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
     <script>
-        // ========== COUCHE DE STOCKAGE FICHIER ==========
-        const fileStore = {
-            dirHandle: null,
-            fileName: 'entrequarts_data.json',
-            supported: ('showDirectoryPicker' in window),
+        // ========== COUCHE DE STOCKAGE JSONBIN ==========
+        const jsonBinStore = {
+            BIN_ID: '6a0afcef502d785a1b733327',
+            API_KEY: '$2a$10$A48sYPs6BJzB1tXVKjZ5IeEN7CMMXgxvQNExIDAptFD901vaO0gvi',
+            BASE_URL: 'https://api.jsonbin.io/v3/b',
 
-            async connecter() {
+            async lire() {
                 try {
-                    this.dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-                    await this.lire();
-                    toast('Dossier connecté', 'success');
-                    majIndicateurStockage();
-                    return true;
+                    const res = await fetch(`${this.BASE_URL}/${this.BIN_ID}/latest`, {
+                        headers: { 'X-Master-Key': this.API_KEY }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const json = await res.json();
+                    return json.record || null;
                 } catch(e) {
-                    if (e.name !== 'AbortError') toast('Impossible de connecter le dossier', 'error');
-                    return false;
+                    console.warn('JSONBin lecture échouée:', e);
+                    return null;
                 }
             },
 
-            async lire() {
-                if (!this.dirHandle) return null;
-                try {
-                    const fh = await this.dirHandle.getFileHandle(this.fileName);
-                    const file = await fh.getFile();
-                    return JSON.parse(await file.text());
-                } catch(e) { return null; }
-            },
-
             async ecrire(obj) {
-                if (!this.dirHandle) return false;
                 try {
-                    const fh = await this.dirHandle.getFileHandle(this.fileName, { create: true });
-                    const w = await fh.createWritable();
-                    await w.write(JSON.stringify(obj, null, 2));
-                    await w.close();
+                    const res = await fetch(`${this.BASE_URL}/${this.BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': this.API_KEY
+                        },
+                        body: JSON.stringify(obj)
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
                     return true;
-                } catch(e) { toast('Erreur de sauvegarde fichier', 'error'); return false; }
-            },
-
-            estConnecte() { return this.dirHandle !== null; }
+                } catch(e) {
+                    console.warn('JSONBin écriture échouée:', e);
+                    return false;
+                }
+            }
         };
 
         // ========== PERSISTENCE ==========
+        // formulaire en cours → localStorage uniquement (chaque poste indépendant)
+        // historique → JSONBin partagé, max 25 entrées
+
         function lireHistorique() {
             return JSON.parse(localStorage.getItem('passations_historique') || '[]');
         }
 
         async function sauverHistorique(historique) {
-            localStorage.setItem('passations_historique', JSON.stringify(historique));
-            if (fileStore.estConnecte()) {
-                await fileStore.ecrire({ config, data, historique });
+            const limite = historique.slice(0, 25);
+            localStorage.setItem('passations_historique', JSON.stringify(limite));
+            const indicateur = document.getElementById('sync-status');
+            if (indicateur) indicateur.textContent = '…';
+            const ok = await jsonBinStore.ecrire({ historique: limite });
+            if (indicateur) {
+                indicateur.textContent = ok ? '✓' : '';
+                setTimeout(() => { indicateur.textContent = ''; }, 2000);
             }
         }
 
         async function sauverToutEtat() {
             localStorage.setItem('passation_config', JSON.stringify(config));
             localStorage.setItem('passation_data', JSON.stringify(data));
-            if (fileStore.estConnecte()) {
-                await fileStore.ecrire({ config, data, historique: lireHistorique() });
-            }
         }
 
-        function majIndicateurStockage() {
-            const el = document.getElementById('stockage-status');
-            const btn = document.getElementById('btn-connecter');
-            if (!el) return;
-            if (fileStore.estConnecte()) {
-                el.innerHTML = '<i data-lucide="hard-drive"></i> Fichier partagé connecté';
-                el.className = 'stockage-status connected';
-                if (btn) btn.style.display = 'none';
-            } else {
-                el.innerHTML = '<i data-lucide="alert-circle"></i> Stockage local uniquement';
-                el.className = 'stockage-status local';
-                if (btn) btn.style.display = '';
-            }
-            refreshIcons();
-        }
+        function majIndicateurStockage() {}
+        async function connecterDossier() {}
 
-        async function connecterDossier() {
-            if (!fileStore.supported) {
-                toast('Votre navigateur ne supporte pas cette fonction. Utilisez Chrome ou Edge.', 'error', 5000);
-                return;
-            }
-            const ok = await fileStore.connecter();
-            if (!ok) return;
-            const etat = await fileStore.lire();
-            if (etat) {
-                if (etat.config) {
-                    config = etat.config;
-                    if (!Array.isArray(config.sedList)) config.sedList = [];
-                    if (!config.checklists) config.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
-                    zones = config.departements;
-                    localStorage.setItem('passation_config', JSON.stringify(config));
-                    appliquerConfig();
-                    rafraichirDatalistSED();
-                }
-                if (etat.data) { data = etat.data; localStorage.setItem('passation_data', JSON.stringify(data)); }
-                if (etat.historique) { localStorage.setItem('passations_historique', JSON.stringify(etat.historique)); }
-                renderZones();
-                toast('Données chargées depuis le dossier partagé', 'success');
-            } else {
-                await sauverToutEtat();
-                toast('Fichier de données créé dans le dossier partagé', 'success');
-            }
+        async function chargerDepuisJsonBin() {
+            const etat = await jsonBinStore.lire();
+            if (!etat || !Array.isArray(etat.historique)) return;
+            const local = lireHistorique();
+            const map = new Map();
+            [...etat.historique, ...local].forEach(p => map.set(p.id, p));
+            const fusion = Array.from(map.values())
+                .sort((a, b) => b.id - a.id)
+                .slice(0, 25);
+            localStorage.setItem('passations_historique', JSON.stringify(fusion));
         }
 
         // ========== CONFIGURATION ==========
@@ -3575,6 +3549,9 @@
         rafraichirDatalistSED();
         renderZones();
         refreshIcons();
+
+        // Chargement depuis JSONBin (données partagées entre tous les postes)
+        chargerDepuisJsonBin();
 
         // ════════════════════════════════════════════════════════
         // ANIMATIONS — Ripple + Confetti + Spotlight tracking
