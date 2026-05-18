@@ -1,0 +1,3631 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entre Quarts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Couleurs officielles Enedis (Mémo-marque) */
+            --enedis-bleu: #1423DC;          /* Bleu Enedis */
+            --enedis-bleu-fonce: #232873;    /* Bleu foncé */
+            --enedis-bleu-clair: #2382D2;    /* Bleu moyen */
+            --enedis-turquoise: #4BC3C3;     /* Turquoise */
+            --enedis-vert: #41A57D;          /* Vert Enedis */
+            --enedis-vert-fonce: #2d7a5a;
+            --enedis-vert-clair: #96CD32;    /* Vert clair */
+            --enedis-jaune: #FFC328;         /* Jaune solaire */
+            --enedis-orange: #EB6E3C;
+            --enedis-rouge: #AF2891;         /* Prune (alerte douce) */
+            --enedis-rouge-vif: #dc3545;
+            --enedis-gris: #6b7280;
+            --enedis-gris-clair: #f4f5f9;
+            --enedis-gris-bord: #d8dbe5;
+        }
+
+        /* Icônes Lucide : taille et alignement cohérents */
+        [data-lucide], .lucide {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        button [data-lucide], button .lucide {
+            margin-right: 4px;
+        }
+
+        .zone-title [data-lucide], .zone-title .lucide {
+            width: 14px;
+            height: 14px;
+        }
+
+        .modal-header h2 [data-lucide], .modal-header h2 .lucide {
+            width: 22px;
+            height: 22px;
+            margin-right: 8px;
+        }
+
+        .section-label [data-lucide], .section-label .lucide {
+            width: 15px;
+            height: 15px;
+            stroke: var(--enedis-bleu);
+        }
+
+        body.dark .section-label [data-lucide],
+        body.dark .section-label .lucide {
+            stroke: var(--enedis-bleu-clair);
+        }
+
+        /* Toasts */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: white;
+            color: #1f2937;
+            padding: 14px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 240px;
+            max-width: 380px;
+            border-left: 4px solid var(--enedis-bleu);
+            animation: toastIn 0.3s ease-out;
+            pointer-events: auto;
+        }
+
+        .toast.toast-success { border-left-color: var(--enedis-vert); }
+        .toast.toast-error { border-left-color: var(--enedis-rouge); }
+        .toast.toast-warning { border-left-color: var(--enedis-orange); }
+        .toast.toast-info { border-left-color: var(--enedis-bleu); }
+
+        .toast [data-lucide], .toast .lucide {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast.toast-success [data-lucide],
+        .toast.toast-success .lucide { stroke: var(--enedis-vert); }
+        .toast.toast-error [data-lucide],
+        .toast.toast-error .lucide { stroke: var(--enedis-rouge); }
+        .toast.toast-warning [data-lucide],
+        .toast.toast-warning .lucide { stroke: var(--enedis-orange); }
+        .toast.toast-info [data-lucide],
+        .toast.toast-info .lucide { stroke: var(--enedis-bleu); }
+
+        .toast.leaving {
+            animation: toastOut 0.3s ease-in forwards;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes toastOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+
+        body.dark .toast {
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f0f3f7;
+            transition: background 0.3s;
+        }
+
+        body.dark {
+            background: #050a25;
+            color: #e5e7eb;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--enedis-bleu);
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: none;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+        }
+
+        body.dark .header {
+            background: var(--enedis-bleu-fonce);
+            color: #ffffff;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .header-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255,255,255,0.25);
+        }
+        body.dark .header-divider { background: rgba(255,255,255,0.18); }
+
+        .logo-enedis {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .logo-enedis-svg {
+            height: 56px;
+            width: auto;
+            display: block;
+        }
+
+        .title {
+            font-size: 17px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.95);
+            letter-spacing: 0.2px;
+        }
+        body.dark .title { color: rgba(255,255,255,0.95); }
+
+        .title::before {
+            content: '';
+            display: none;
+        }
+
+        /* Fil d'énergies signature Enedis : bandeau multicolore sous le header */
+        .fil-energies {
+            height: 4px;
+            background: linear-gradient(90deg,
+                #1423DC 0%,
+                #2382D2 22%,
+                #4BC3C3 42%,
+                #41A57D 62%,
+                #96CD32 78%,
+                #FFC328 100%);
+            border-radius: 0;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .fil-energies::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            transform: translateX(-100%);
+            animation: filFlow 6s ease-in-out infinite;
+        }
+        @keyframes filFlow {
+            0%, 100% { transform: translateX(-100%); }
+            50%      { transform: translateX(100%); }
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 9px 16px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            box-shadow: none;
+        }
+
+        .btn-mode {
+            background: rgba(255,255,255,0.12);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.25);
+        }
+        body.dark .btn-mode {
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.20);
+        }
+        .btn-mode:hover {
+            background: rgba(255,255,255,0.20);
+        }
+
+        .btn-nouveau {
+            background: rgba(255,255,255,0.10);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.22);
+        }
+        body.dark .btn-nouveau {
+            background: rgba(255,255,255,0.06);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.18);
+        }
+        .btn-nouveau:hover { background: rgba(255,255,255,0.18); }
+
+        .btn-save {
+            background: var(--enedis-vert);
+            color: white;
+        }
+        .btn-save:hover { background: var(--enedis-vert-fonce); }
+
+        .btn-export {
+            background: #ffffff;
+            color: var(--enedis-bleu);
+            border-color: #ffffff;
+        }
+        .btn-export:hover { background: #f3f4f6; }
+
+        .btn-historique {
+            background: rgba(255,255,255,0.10);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.22);
+        }
+        body.dark .btn-historique {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.18);
+        }
+        .btn-historique:hover { background: rgba(255,255,255,0.18); }
+
+        .btn-config {
+            background: rgba(255,255,255,0.10);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.22);
+        }
+        body.dark .btn-config {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.18);
+        }
+        .btn-config:hover { background: rgba(255,255,255,0.18); }
+
+        /* Formulaires de config */
+        .form-row {
+            margin-bottom: 18px;
+        }
+
+        .form-row label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #374151;
+        }
+
+        body.dark .form-row label {
+            color: #d1d5db;
+        }
+
+        .form-row input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--enedis-gris-bord);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        body.dark .form-row input[type="text"] {
+            background: #3a3a3a;
+            border-color: #555;
+            color: white;
+        }
+
+        .dept-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .dept-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .dept-item input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid var(--enedis-gris-bord);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        body.dark .dept-item input {
+            background: #3a3a3a;
+            border-color: #555;
+            color: white;
+        }
+
+        .btn-dept-remove {
+            background: var(--enedis-rouge);
+            color: white;
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-dept-add {
+            background: var(--enedis-bleu);
+            color: white;
+            padding: 8px 14px;
+            margin-top: 4px;
+            font-size: 13px;
+            align-self: flex-start;
+        }
+
+        /* Modale historique */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 900px;
+            width: 100%;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        body.dark .modal {
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--enedis-bleu);
+        }
+
+        .modal-header h2 {
+            color: var(--enedis-bleu);
+            font-size: 22px;
+        }
+
+        .btn-close {
+            background: #666;
+            color: white;
+            padding: 8px 14px;
+        }
+
+        .historique-item {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        body.dark .historique-item {
+            background: #3a3a3a;
+        }
+
+        .historique-info {
+            font-size: 14px;
+        }
+
+        .historique-info strong {
+            color: var(--enedis-bleu);
+            font-size: 15px;
+        }
+
+        body.dark .historique-info strong {
+            color: #4d9fff;
+        }
+
+        .historique-meta {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        body.dark .historique-meta {
+            color: #aaa;
+        }
+
+        .historique-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .historique-actions button {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .btn-voir { background: #2196F3; color: white; }
+        .btn-charger { background: var(--enedis-vert); color: white; }
+        .btn-suppr { background: #dc3545; color: white; }
+
+        .historique-vide {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .preview-content {
+            background: #f9f9f9;
+            border-left: 4px solid var(--enedis-bleu);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        body.dark .preview-content {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .redacteur-section {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        body.dark .redacteur-section {
+            background: #2a2a2a;
+        }
+
+        .redacteur-section label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .redacteur-section input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        body.dark .redacteur-section input {
+            background: #3a3a3a;
+            border-color: #555;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        body.dark .tab {
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        .tab.active {
+            background: var(--enedis-bleu);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,82,204,0.3);
+        }
+
+        .zone {
+            background: white;
+            padding: 16px 18px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+
+        body.dark .zone {
+            background: #2a2a2a;
+        }
+
+        .zone-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--enedis-bleu);
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--enedis-bleu);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .zone-title-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            line-height: 1.1;
+        }
+        .zone-title-sub {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--enedis-gris-texte, #6b7280);
+        }
+        body.dark .zone-title-sub { color: #8a93b8; }
+
+        /* Bouton "Copier pour Teams" — secondaire, outline Enedis */
+        .btn-copy {
+            background: white;
+            color: var(--enedis-bleu);
+            border: 1.5px solid var(--enedis-bleu);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 14px;
+        }
+        .btn-copy:hover {
+            background: rgba(20, 35, 220, 0.06);
+        }
+        .btn-copy.copied {
+            background: var(--enedis-vert);
+            border-color: var(--enedis-vert);
+            color: white;
+        }
+        body.dark .btn-copy {
+            background: transparent;
+            color: #6c8cff;
+            border-color: #6c8cff;
+        }
+        body.dark .btn-copy:hover {
+            background: rgba(108, 140, 255, 0.12);
+        }
+        body.dark .btn-copy.copied {
+            background: var(--enedis-vert);
+            border-color: var(--enedis-vert);
+            color: white;
+        }
+
+        .section-label {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .agent-row {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1.5fr 2.5fr 1fr 1.4fr 40px;
+            grid-template-areas:
+                "nom panne debut fin suppr"
+                "extra extra extra extra extra"
+                "notes notes notes notes notes";
+            gap: 10px;
+            align-items: center;
+        }
+
+        body.dark .agent-row {
+            background: #3a3a3a;
+        }
+
+        .agent-row .col-nom { grid-area: nom; }
+        .agent-row .col-panne { grid-area: panne; }
+        .agent-row .col-debut { grid-area: debut; }
+        .agent-row .col-fin { grid-area: fin; }
+        .agent-row .col-extra { grid-area: extra; }
+
+        /* Zone fin : segmented + heure conditionnelle alignés */
+        .agent-row .col-fin {
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+        }
+        .agent-row .col-fin .statut-segmented { flex: 1; min-width: 0; }
+        .agent-row .col-fin .heure-fin-input {
+            width: 90px;
+            flex-shrink: 0;
+        }
+
+        /* Coche "Prend son 089" — nuit→matin uniquement */
+        .agent-row .col-extra {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+        .agent-row .toggle-089 {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #fff;
+            border: 1.5px solid var(--enedis-gris-bord);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--enedis-gris, #6b7280);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s var(--ease-out-soft);
+        }
+        .agent-row .toggle-089:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        .agent-row .toggle-089.active {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
+        .agent-row .toggle-089 .check-box {
+            width: 14px;
+            height: 14px;
+            border: 1.5px solid currentColor;
+            border-radius: 3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .agent-row .toggle-089.active .check-box {
+            background: #fff;
+            color: #dc3545;
+        }
+        .agent-row .toggle-089 .check-box svg { width: 10px; height: 10px; }
+        body.dark .agent-row .toggle-089 {
+            background: #2a2a2a;
+            border-color: #555;
+            color: #9ca3af;
+        }
+        body.dark .agent-row .toggle-089.active {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
+
+        /* Segmented control "En cours / Sur le retour" — style Enedis sobre */
+        .agent-row .statut-segmented {
+            display: inline-flex;
+            width: 100%;
+            border: 1px solid var(--enedis-gris-bord);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #ffffff;
+            height: 38px;
+        }
+        .agent-row .statut-seg {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--enedis-gris, #6b7280);
+            cursor: pointer;
+            transition: background 0.15s var(--ease-out-soft), color 0.15s var(--ease-out-soft);
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+        }
+        .agent-row .statut-seg:hover {
+            background: rgba(20, 35, 220, 0.04);
+            color: var(--enedis-bleu);
+        }
+        .agent-row .statut-seg + .statut-seg {
+            border-left: 1px solid var(--enedis-gris-bord);
+        }
+        .agent-row .statut-seg.active {
+            background: var(--enedis-bleu);
+            color: #ffffff;
+        }
+        .agent-row .statut-seg.active:hover {
+            background: var(--enedis-bleu);
+        }
+        body.dark .agent-row .statut-segmented {
+            background: #1a2050;
+            border-color: #2a3580;
+        }
+        body.dark .agent-row .statut-seg {
+            color: #9ca3af;
+        }
+        body.dark .agent-row .statut-seg + .statut-seg {
+            border-left-color: #2a3580;
+        }
+        body.dark .agent-row .statut-seg:hover {
+            background: rgba(108, 140, 255, 0.10);
+            color: #6c8cff;
+        }
+        body.dark .agent-row .statut-seg.active {
+            background: var(--enedis-bleu);
+            color: #ffffff;
+        }
+        .agent-row .col-suppr { grid-area: suppr; }
+        .agent-row .col-notes { grid-area: notes; }
+
+        .agent-row input[type="text"],
+        .agent-row input[type="time"] {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .agent-row textarea.notes-field {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            width: 100%;
+            min-height: 40px;
+            resize: vertical;
+        }
+
+        body.dark .agent-row input,
+        body.dark .agent-row textarea.notes-field {
+            background: #2a2a2a;
+            border-color: #555;
+            color: white;
+        }
+
+        .en-cours {
+            color: var(--enedis-orange);
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .btn-add {
+            background: var(--enedis-bleu);
+            color: white;
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        textarea.textarea-large {
+            min-height: 180px;
+            font-size: 15px;
+        }
+
+        body.dark textarea {
+            background: #3a3a3a;
+            border-color: #555;
+            color: white;
+        }
+
+        .info {
+            background: #e3f2fd;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        body.dark .info {
+            background: #1a3a5a;
+            border-color: #2196F3;
+        }
+
+        .logo-enedis-legacy-removed {
+            /* ancien wrapper supprimé : fond blanc + padding nuisaient au logo officiel */
+        }
+
+        .logo-enedis span {
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        /* Onglets dans la modale paramètres */
+        .config-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--enedis-gris-bord);
+        }
+
+        .config-tab {
+            background: transparent;
+            color: var(--enedis-gris);
+            padding: 10px 18px;
+            border-radius: 8px 8px 0 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .config-tab:hover {
+            background: var(--enedis-gris-clair);
+            transform: none;
+            box-shadow: none;
+        }
+
+        body.dark .config-tab:hover {
+            background: #3a3a3a;
+        }
+
+        .config-tab.active {
+            color: var(--enedis-bleu);
+            border-bottom-color: var(--enedis-bleu);
+        }
+
+        body.dark .config-tab.active {
+            color: var(--enedis-bleu-clair);
+            border-bottom-color: var(--enedis-bleu-clair);
+        }
+
+        .config-panel {
+            display: none;
+        }
+
+        .config-panel.active {
+            display: block;
+        }
+
+        /* Liste SED */
+        .sed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sed-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .sed-item input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid var(--enedis-gris-bord);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        body.dark .sed-item input {
+            background: #3a3a3a;
+            border-color: #555;
+            color: white;
+        }
+
+        .sed-empty {
+            text-align: center;
+            padding: 30px;
+            color: var(--enedis-gris);
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* Datalist styling — le navigateur le gère, mais on peut styliser l'input */
+        input[list] {
+            background-image: none;
+        }
+
+        /* Zone sauvegarde */
+        .backup-section {
+            background: var(--enedis-gris-clair);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        body.dark .backup-section {
+            background: #3a3a3a;
+        }
+
+        .backup-section h3 {
+            font-size: 15px;
+            color: var(--enedis-bleu);
+            margin-bottom: 8px;
+        }
+
+        body.dark .backup-section h3 {
+            color: var(--enedis-bleu-clair);
+        }
+
+        .backup-section p {
+            font-size: 13px;
+            color: var(--enedis-gris);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        body.dark .backup-section p {
+            color: #aaa;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--enedis-gris-bord);
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--enedis-gris);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dropzone [data-lucide] {
+            width: 32px;
+            height: 32px;
+            stroke: var(--enedis-gris-bord);
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--enedis-bleu);
+            background: #f0f5ff;
+            color: var(--enedis-bleu);
+        }
+
+        .dropzone:hover [data-lucide], .dropzone.dragover [data-lucide] {
+            stroke: var(--enedis-bleu);
+        }
+
+        body.dark .dropzone:hover, body.dark .dropzone.dragover {
+            background: #1a2a4a;
+        }
+
+        .dropzone small {
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+        @media print {
+            body { background: white; }
+            .header, .tabs, .info, button { display: none; }
+        }
+
+        /* Checklist prise de poste */
+        .checklist-wrapper {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid var(--enedis-gris-bord);
+        }
+
+        body.dark .checklist-wrapper {
+            background: #2a2a2a;
+            border-color: #555;
+        }
+
+        .checklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checklist-header h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--enedis-bleu);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        body.dark .checklist-header h3 {
+            color: var(--enedis-bleu-clair);
+        }
+
+        .checklist-toggle {
+            background: none;
+            border: none;
+            font-size: 13px;
+            color: var(--enedis-gris);
+            cursor: pointer;
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .checklist-toggle:hover {
+            transform: none;
+            box-shadow: none;
+            color: var(--enedis-bleu);
+        }
+
+        .checklist-counter {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: var(--enedis-gris-clair);
+            color: var(--enedis-gris);
+        }
+
+        .checklist-counter.all-done {
+            background: var(--enedis-vert);
+            color: white;
+        }
+
+        body.dark .checklist-counter {
+            background: #444;
+        }
+
+        .checklist-body {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checklist-body.collapsed {
+            display: none;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--enedis-gris-clair);
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            min-width: 140px;
+        }
+
+        body.dark .check-item {
+            background: #3a3a3a;
+        }
+
+        .check-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .check-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--enedis-rouge);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .check-dot.done {
+            background: var(--enedis-vert);
+        }
+
+        .check-dot svg {
+            width: 12px;
+            height: 12px;
+            stroke: white;
+            stroke-width: 3;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .check-dot.done svg {
+            opacity: 1;
+        }
+
+        .check-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        body.dark .check-label {
+            color: #d1d5db;
+        }
+
+        .check-item.checked .check-label {
+            color: var(--enedis-vert-fonce);
+        }
+
+        .check-item.check-add {
+            opacity: 0.65;
+            border: 2px dashed var(--enedis-bleu);
+            background: transparent;
+        }
+
+        .check-item.check-add:hover {
+            opacity: 1;
+        }
+
+        /* Bouton Appeler AMTI */
+        .amti-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff3f4;
+            border: 2px solid var(--enedis-rouge);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 12px 0 8px 0;
+            user-select: none;
+        }
+
+        body.dark .amti-check {
+            background: #3a1a1e;
+            border-color: var(--enedis-rouge);
+        }
+
+        .amti-check.done {
+            background: #f0fdf4;
+            border-color: var(--enedis-vert);
+        }
+
+        body.dark .amti-check.done {
+            background: #0d2e1a;
+            border-color: var(--enedis-vert);
+        }
+
+        .amti-check:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .amti-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--enedis-rouge);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .amti-dot.done { background: var(--enedis-vert); }
+        .amti-dot svg { stroke: white; }
+
+        .amti-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--enedis-rouge);
+            letter-spacing: 0.02em;
+        }
+
+        .amti-check.done .amti-label { color: var(--enedis-vert-fonce); }
+        body.dark .amti-check.done .amti-label { color: var(--enedis-vert); }
+
+        /* AMTI compact dans le zone-title */
+        .btn-amti-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #fff0f1;
+            border: 2px solid var(--enedis-rouge);
+            color: var(--enedis-rouge);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-amti-inline:hover {
+            transform: none;
+            box-shadow: 0 2px 6px rgba(220,53,69,0.3);
+        }
+
+        .btn-amti-inline.done {
+            background: #f0fdf4;
+            border-color: var(--enedis-vert);
+            color: var(--enedis-vert-fonce);
+        }
+
+        .btn-amti-inline svg {
+            stroke: currentColor;
+        }
+
+        body.dark .btn-amti-inline {
+            background: #3a1a1e;
+        }
+
+        body.dark .btn-amti-inline.done {
+            background: #0d2e1a;
+            color: var(--enedis-vert);
+        }
+
+        /* ════════════════════════════════════════════════════════
+           ANIMATIONS — SI exploitation Enedis : sobre, fonctionnel
+           ════════════════════════════════════════════════════════ */
+
+        :root {
+            --ease-out-soft: cubic-bezier(.22, 1, .36, 1);
+            --ease-out-spring: cubic-bezier(.34, 1.4, .64, 1);
+            --ease-in-out-soft: cubic-bezier(.65, 0, .35, 1);
+            --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Plus d'aurora — fond plat Enedis */
+        body::before { display: none; }
+        .container { position: relative; z-index: 1; }
+
+        /* ──────── Keyframes ──────── */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(380px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(420px); opacity: 0; }
+        }
+        @keyframes savePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,90,0.0), 0 4px 12px rgba(0,168,90,0.25); }
+            50%      { box-shadow: 0 0 0 8px rgba(0,168,90,0.0), 0 4px 14px rgba(0,168,90,0.35); }
+        }
+        @keyframes drawCheck {
+            from { stroke-dashoffset: 24; }
+            to   { stroke-dashoffset: 0; }
+        }
+        @keyframes dotFill {
+            0%   { transform: scale(1); }
+            40%  { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        @keyframes counterPop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.18); }
+            100% { transform: scale(1); }
+        }
+        @keyframes confettiBurst {
+            0%   { transform: translate(0,0) scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--cx), var(--cy)) scale(1) rotate(var(--cr)); opacity: 0; }
+        }
+        @keyframes ripple {
+            from { transform: scale(0); opacity: 0.45; }
+            to   { transform: scale(2.6); opacity: 0; }
+        }
+        @keyframes amtiUrgent {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+            50%      { box-shadow: 0 0 0 6px rgba(220,53,69,0.18); }
+        }
+        @keyframes shineSweep {
+            0%   { transform: translateX(-120%) skewX(-20deg); }
+            100% { transform: translateX(220%) skewX(-20deg); }
+        }
+
+        /* ──────── Page entry — sobre ──────── */
+        .header           { animation: fadeSlideDown 0.35s var(--ease-out-soft) 0.00s both; }
+        .fil-energies     { animation: fadeIn        0.40s var(--ease-out-soft) 0.10s both; }
+        .redacteur-section{ animation: fadeSlideUp   0.30s var(--ease-out-soft) 0.06s both; }
+        .tabs             { animation: fadeSlideUp   0.30s var(--ease-out-soft) 0.10s both; }
+        #zones-container  { animation: fadeIn        0.30s var(--ease-out-soft) 0.14s both; }
+        .info             { animation: fadeIn        0.40s var(--ease-out-soft) 0.30s both; }
+
+        /* Header : pas de gradient flow, pas de shine, pas de bounce du logo */
+        .logo-enedis {
+            transition: opacity 0.2s var(--ease-out-soft);
+        }
+        .logo-enedis:hover { opacity: 0.92; }
+
+        /* ──────── Boutons : minimal, pas de translateY ──────── */
+        button {
+            position: relative;
+            overflow: hidden;
+            transition:
+                background 0.15s var(--ease-out-soft),
+                color 0.15s var(--ease-out-soft),
+                border-color 0.15s var(--ease-out-soft);
+        }
+        button:hover { box-shadow: none; transform: none; }
+        button:active { transform: none; }
+        /* Ripple injecté en JS dans .ripple */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.45);
+            transform: scale(0);
+            animation: ripple 0.55s var(--ease-out-soft) forwards;
+            pointer-events: none;
+        }
+        button:not(.btn-mode):not(.btn-save):not(.btn-export):not(.btn-historique):not(.btn-config):not(.btn-nouveau) .ripple {
+            background: rgba(20,35,220,0.18);
+        }
+
+        /* Plus de pulse infini sur le save — feedback de clic uniquement */
+        .btn-save { animation: none; }
+
+        /* ──────── Tabs : bandeau d'onglets type intranet ──────── */
+        .tabs {
+            gap: 0;
+            background: #ffffff;
+            border: 1px solid var(--enedis-gris-bord);
+            border-radius: 4px;
+            padding: 0;
+            overflow: hidden;
+        }
+        body.dark .tabs {
+            background: #0f1535;
+            border-color: #1e2a5c;
+        }
+        .tab {
+            position: relative;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            color: var(--enedis-gris);
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            padding: 14px 18px;
+            transition: background 0.15s, color 0.15s;
+            box-shadow: none;
+        }
+        body.dark .tab { color: #9ca3af; }
+        .tab:not(:last-child) {
+            border-right: 1px solid var(--enedis-gris-bord);
+        }
+        body.dark .tab:not(:last-child) { border-right-color: #1e2a5c; }
+        .tab:hover:not(.active) {
+            background: rgba(20,35,220,0.04);
+            color: var(--enedis-bleu);
+            transform: none;
+            box-shadow: none;
+        }
+        body.dark .tab:hover:not(.active) {
+            background: rgba(108,140,255,0.08);
+            color: #6c8cff;
+        }
+        .tab.active {
+            background: var(--enedis-bleu);
+            color: #ffffff;
+            box-shadow: none;
+            transform: none;
+        }
+        .tab.active::before, .tab.active::after { display: none; }
+
+        /* ──────── Zones — cards plates Enedis ──────── */
+        .zone {
+            animation: fadeSlideUp 0.35s var(--ease-out-soft) both;
+            transition: border-color 0.2s var(--ease-out-soft);
+            background: #ffffff;
+            border: 1px solid var(--enedis-gris-bord);
+            border-radius: 4px;
+            box-shadow: none;
+            position: relative;
+        }
+        body.dark .zone {
+            background: #0f1535;
+            border-color: #1e2a5c;
+        }
+        .zone::before { display: none; }
+        .zone > * { position: relative; z-index: 1; }
+        .zone:nth-child(1) { animation-delay: 0.02s; }
+        .zone:nth-child(2) { animation-delay: 0.06s; }
+        .zone:nth-child(3) { animation-delay: 0.10s; }
+        .zone:nth-child(4) { animation-delay: 0.14s; }
+        .zone:nth-child(5) { animation-delay: 0.18s; }
+        .zone:nth-child(6) { animation-delay: 0.22s; }
+        .zone:hover {
+            box-shadow: none;
+            transform: none;
+            border-color: var(--enedis-bleu-clair);
+        }
+
+        /* Zone-title : trait bleu Enedis simple à gauche, plus de gradient flow */
+        .zone-title {
+            position: relative;
+            border-bottom: 1px solid var(--enedis-gris-bord);
+            padding: 12px 18px 12px 22px;
+            margin: 0 -18px 14px -18px;
+            background: linear-gradient(180deg, #fafbfd 0%, #ffffff 100%);
+        }
+        body.dark .zone-title {
+            background: linear-gradient(180deg, #131a40 0%, #0f1535 100%);
+            border-bottom-color: #1e2a5c;
+        }
+        .zone-title::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--enedis-bleu);
+        }
+        .zone-title .zone-title-text > span:first-child {
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            -webkit-text-fill-color: unset;
+            color: var(--enedis-bleu);
+            animation: none;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.2px;
+        }
+        body.dark .zone-title .zone-title-text > span:first-child {
+            color: #6c8cff;
+        }
+        .zone-title::after { display: none; }
+
+        /* ──────── Section labels : fade-in subtil ──────── */
+        .section-label {
+            opacity: 0;
+            animation: fadeSlideUp 0.4s var(--ease-out-soft) forwards;
+        }
+        .section-label:nth-of-type(1) { animation-delay: 0.10s; }
+        .section-label:nth-of-type(2) { animation-delay: 0.18s; }
+        .section-label:nth-of-type(3) { animation-delay: 0.26s; }
+        .section-label:nth-of-type(4) { animation-delay: 0.34s; }
+        .section-label [data-lucide] {
+            transition: transform 0.3s var(--ease-out-spring);
+        }
+        .section-label:hover [data-lucide] {
+            transform: rotate(-8deg) scale(1.15);
+        }
+
+        /* ──────── Agent rows ──────── */
+        .agent-row {
+            animation: fadeSlideUp 0.40s var(--ease-out-soft) both;
+            transition:
+                box-shadow 0.30s var(--ease-out-soft),
+                transform 0.30s var(--ease-out-soft),
+                background 0.30s var(--ease-out-soft);
+            position: relative;
+        }
+        .agent-row:nth-child(1) { animation-delay: 0.04s; }
+        .agent-row:nth-child(2) { animation-delay: 0.10s; }
+        .agent-row:nth-child(3) { animation-delay: 0.16s; }
+        .agent-row:nth-child(4) { animation-delay: 0.22s; }
+        .agent-row:nth-child(5) { animation-delay: 0.28s; }
+        .agent-row:nth-child(6) { animation-delay: 0.34s; }
+
+        .agent-row:hover {
+            box-shadow: none;
+            transform: none;
+            background: #f4f6fb;
+        }
+        body.dark .agent-row:hover { background: #131a40; }
+        /* Trait coloré qui apparait au hover */
+        .agent-row::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 6px; bottom: 6px;
+            width: 2px;
+            background: var(--enedis-bleu);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.18s var(--ease-out-soft);
+        }
+        .agent-row:hover::before { transform: scaleY(1); }
+
+        /* Inputs */
+        .agent-row input[type="text"],
+        .agent-row input[type="time"],
+        .agent-row textarea.notes-field {
+            transition:
+                border-color 0.25s var(--ease-out-soft),
+                box-shadow 0.25s var(--ease-out-soft),
+                transform 0.20s var(--ease-out-soft);
+        }
+        .agent-row input[type="text"]:focus,
+        .agent-row input[type="time"]:focus,
+        .agent-row textarea.notes-field:focus {
+            border-color: var(--enedis-bleu);
+            box-shadow: 0 0 0 3px rgba(31,90,168,0.14);
+            outline: none;
+        }
+        textarea {
+            transition:
+                border-color 0.25s var(--ease-out-soft),
+                box-shadow 0.25s var(--ease-out-soft);
+        }
+        textarea:focus {
+            border-color: var(--enedis-bleu);
+            box-shadow: 0 0 0 3px rgba(31,90,168,0.14);
+            outline: none;
+        }
+        .redacteur-section input {
+            transition:
+                border-color 0.25s var(--ease-out-soft),
+                box-shadow 0.25s var(--ease-out-soft);
+        }
+        .redacteur-section input:focus {
+            border-color: var(--enedis-bleu);
+            box-shadow: 0 0 0 3px rgba(31,90,168,0.14);
+            outline: none;
+        }
+
+        /* "EN COURS" badge — sobre, plus de pulse */
+        .en-cours {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background: rgba(255,195,40,0.20);
+            color: #8a6500;
+            font-weight: 600;
+            animation: none;
+        }
+        body.dark .en-cours { color: #FFC328; }
+
+        /* ──────── Checklist — sobre Enedis ──────── */
+        .checklist-wrapper {
+            animation: fadeSlideUp 0.35s var(--ease-out-soft) 0.04s both;
+            transition: border-color 0.2s var(--ease-out-soft);
+            background: #ffffff;
+            border: 1px solid var(--enedis-gris-bord) !important;
+            box-shadow: none;
+            position: relative;
+        }
+        body.dark .checklist-wrapper {
+            background: #0f1535;
+            border-color: #1e2a5c !important;
+        }
+        .checklist-wrapper:hover {
+            box-shadow: none;
+            border-color: var(--enedis-bleu-clair) !important;
+            transform: none;
+        }
+        .checklist-body {
+            transition: max-height 0.3s var(--ease-out-soft), opacity 0.2s var(--ease-out-soft);
+            overflow: hidden;
+        }
+
+        .check-item {
+            transition:
+                background 0.15s var(--ease-out-soft),
+                border-color 0.15s var(--ease-out-soft);
+            border: 1px solid var(--enedis-gris-bord);
+            background: #fafbfd;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+        body.dark .check-item {
+            background: #131a40;
+            border-color: #1e2a5c;
+        }
+        .check-item:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: var(--enedis-bleu-clair);
+            background: #f4f6fb;
+        }
+        body.dark .check-item:hover {
+            background: #182055;
+        }
+        .check-item:active { transform: none; }
+        .check-item.checked {
+            background: rgba(65,165,125,0.08);
+            border-color: rgba(65,165,125,0.32);
+            box-shadow: none;
+        }
+        body.dark .check-item.checked {
+            background: rgba(65,165,125,0.14);
+        }
+
+        /* Le rond de check : glow vert quand done */
+        .check-dot {
+            transition:
+                background 0.45s var(--ease-out-spring),
+                transform 0.40s var(--ease-out-spring),
+                box-shadow 0.45s var(--ease-out-soft);
+            position: relative;
+        }
+        .check-dot.done {
+            animation: dotFill 0.55s var(--ease-out-spring);
+            box-shadow: 0 0 0 0 rgba(0,168,90,0.45), 0 4px 12px -2px rgba(0,168,90,0.5);
+        }
+        .check-dot.done::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid rgba(0,168,90,0.6);
+            opacity: 0;
+            animation: ringExpand 0.7s var(--ease-expo) forwards;
+        }
+        @keyframes ringExpand {
+            0%   { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        .check-dot svg polyline {
+            stroke-dasharray: 24;
+            stroke-dashoffset: 24;
+            transition: stroke-dashoffset 0.5s var(--ease-expo);
+        }
+        .check-dot.done svg polyline {
+            stroke-dashoffset: 0;
+            transition-delay: 0.12s;
+        }
+
+        /* Redacteur section : sobre */
+        .redacteur-section {
+            background: #ffffff;
+            border: 1px solid var(--enedis-gris-bord);
+            box-shadow: none;
+            border-radius: 4px;
+            transition: border-color 0.2s var(--ease-out-soft);
+        }
+        body.dark .redacteur-section {
+            background: #0f1535;
+            border-color: #1e2a5c;
+        }
+        .redacteur-section:focus-within {
+            box-shadow: none;
+            border-color: var(--enedis-bleu);
+            transform: none;
+        }
+
+        /* Tabs sobres : pas de glassmorphism */
+        .tab {
+            background: transparent;
+        }
+        body.dark .tab {
+            background: transparent;
+        }
+            transition:
+                background 0.4s var(--ease-out-soft),
+                color 0.4s var(--ease-out-soft);
+            display: inline-block;
+        }
+        .checklist-counter.bump { animation: counterPop 0.4s var(--ease-out-spring); }
+        .checklist-counter.all-done { animation: counterPop 0.5s var(--ease-out-spring); }
+
+        /* Conteneur confetti positionné par-dessus la checklist */
+        .confetti-host { position: relative; }
+        .confetti-piece {
+            position: absolute;
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            top: 50%; left: 50%;
+            pointer-events: none;
+            animation: confettiBurst 1.1s var(--ease-out-soft) forwards;
+        }
+
+        /* ──────── AMTI ──────── */
+        .btn-amti-inline {
+            transition: background 0.15s var(--ease-out-soft), color 0.15s var(--ease-out-soft);
+            animation: none;
+        }
+        .btn-amti-inline.done { animation: none; }
+        .btn-amti-inline:hover {
+            transform: none;
+            box-shadow: none;
+            background: rgba(175,40,145,0.16);
+        }
+        .btn-amti-inline.done:hover {
+            background: rgba(65,165,125,0.16);
+        }
+
+        /* ──────── Modales ──────── */
+        .modal-overlay {
+            transition: opacity 0.28s var(--ease-out-soft), backdrop-filter 0.28s;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+        }
+        .modal-overlay:not(.open) {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal-overlay.open {
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(15,30,55,0.55);
+        }
+        .modal {
+            animation: modalIn 0.40s var(--ease-out-spring) both;
+            box-shadow: 0 30px 80px -10px rgba(0,0,0,0.4);
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ──────── Historique items ──────── */
+        .historique-item {
+            animation: fadeSlideUp 0.35s var(--ease-out-soft) both;
+            transition:
+                transform 0.30s var(--ease-out-soft),
+                box-shadow 0.30s var(--ease-out-soft),
+                background 0.30s var(--ease-out-soft);
+        }
+        .historique-item:nth-child(1) { animation-delay: 0.04s; }
+        .historique-item:nth-child(2) { animation-delay: 0.08s; }
+        .historique-item:nth-child(3) { animation-delay: 0.12s; }
+        .historique-item:nth-child(4) { animation-delay: 0.16s; }
+        .historique-item:nth-child(5) { animation-delay: 0.20s; }
+        .historique-item:nth-child(6) { animation-delay: 0.24s; }
+        .historique-item:nth-child(7) { animation-delay: 0.28s; }
+        .historique-item:hover {
+            transform: none;
+            box-shadow: none;
+            background: #f4f6fb;
+            border-color: var(--enedis-bleu-clair);
+        }
+        body.dark .historique-item:hover { background: #131a40; }
+
+        /* ──────── Toasts ──────── */
+        .toast {
+            animation: slideInRight 0.42s var(--ease-out-spring) both;
+            box-shadow: 0 14px 38px -10px rgba(0,0,0,0.30);
+        }
+        .toast.leaving {
+            animation: slideOutRight 0.30s var(--ease-in-out-soft) forwards;
+        }
+
+        /* ──────── btn-copy ──────── */
+        .btn-copy {
+            transition:
+                background 0.30s var(--ease-out-soft),
+                transform 0.25s var(--ease-out-spring),
+                box-shadow 0.25s var(--ease-out-soft);
+        }
+        .btn-copy.copied { animation: scaleIn 0.32s var(--ease-out-spring); }
+
+        /* ──────── Dropzone ──────── */
+        .dropzone {
+            transition:
+                border-color 0.25s var(--ease-out-soft),
+                background 0.25s var(--ease-out-soft),
+                color 0.25s var(--ease-out-soft),
+                transform 0.25s var(--ease-out-spring);
+        }
+        .dropzone:hover { transform: none; background: #f4f6fb; }
+        .dropzone.dragover { transform: none; background: rgba(20,35,220,0.06); border-color: var(--enedis-bleu); }
+
+        /* ──────── Mode toggle (pas de transform sur les boutons compacts) ──────── */
+        .checklist-toggle:hover,
+        .config-tab:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Transition douce du dark mode */
+        body, .header, .zone, .modal, .checklist-wrapper, .redacteur-section,
+        .agent-row, .check-item, .historique-item, .tab, button, textarea, input {
+            transition-property: background, color, border-color, box-shadow, transform;
+            transition-duration: 0.30s;
+            transition-timing-function: var(--ease-out-soft);
+        }
+
+        /* Onglet en train de switcher : flash très court sur le container */
+        .zones-switching #zones-container > * {
+            animation-duration: 0.45s;
+        }
+
+        /* ──────── Reduced motion ──────── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            body::before { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-enedis" id="logo-enedis-host" title="Enedis" aria-label="Enedis">
+                    <svg class="logo-enedis-svg" viewBox="0 0 113.3858 56.6924" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Enedis">
+                        <g>
+                            <!-- "e" central : vert anis Enedis (#a0bf3a) -->
+                            <path d="M53.261,29.0212c-1.7735,0-3.2176-1.3252-3.2176-2.9742l.0066-.5398h6.8616c2.3739,0,4.306-1.7955,4.306-4.002v-2.5357c0-2.2076-1.9321-4.002-4.306-4.002h-5.987c-.3326,0-.6686.0033-1.0002.0771-1.9453.4307-3.2981,2.0654-3.2981,3.9249v1.4716c0,.3371.2457.6114.5497.6114h2.3232c.304,0,.5508-.2743.5508-.6114v-.9495c0-.7678.6841-1.3924,1.5256-1.3924h4.6938c.8416,0,1.5257.6246,1.5257,1.3924v1.5047c0,.7667-.6841,1.3913-1.5257,1.3913h-11.6049v3.1196h1.9541v.5398c0,3.3774,2.993,6.1048,6.6534,6.1048h9.9097v-3.1306h-9.9207Z" fill="#a0bf3a"/>
+                            <!-- Reste du wordmark : blanc pour fond bleu Enedis -->
+                            <path d="M38.0254,18.101c1.7735,0,3.2165,1.3417,3.2165,2.9929v10.5078c0,.304.2754.5497.6114.5497h2.1998c.3371,0,.6114-.2457.6114-.5497v-10.5078c0-3.3785-2.9786-6.1268-6.6391-6.1268h-7.0743c-.304,0-.5507.2742-.5507.6124v15.9616c0,.3371.2467.6103.5507.6103h2.3232c.3041,0,.5519-.2732.5519-.6103v-13.4412l4.1992.0011Z" fill="#ffffff"/>
+                            <path d="M18.8218,18.099h9.0163c.3304,0,.5992-.2412.5992-.5387v-2.0522c0-.2985-.2567-.5408-.5992-.5408h-9.0791c-2.5281,0-4.5858,1.8924-4.5858,4.2233v8.7376c0,2.3309,2.0577,4.2234,4.5858,4.2234h9.0791c.3304,0,.5992-.2424.5992-.5398v-2.0522c0-.2963-.2688-.5386-.5992-.5386h-9.0163c-.6632,0-1.2239-.5255-1.2239-1.1468v-2.3981h5.3922c.3304,0,.5992-.2423.5992-.5397v-2.0082c0-.2974-.2688-.5397-.5992-.5397h-5.3922v-3.1417c0-.6224.5607-1.1478,1.2239-1.1478" fill="#ffffff"/>
+                            <path d="M99.2126,26.2298c0-.1553-.0011-.3139-.0166-.4869-.1685-1.909-2.1359-3.3542-4.2101-3.3542h-5.1432l-.1311-.0011c-.8251,0-1.4948-.7303-1.4948-1.627l.0055-1.1666c0-.8228.7303-1.4937,1.627-1.4937h7.1789c.2621,0,.4946-.152.5783-.3789.0209-.0617.033-.1168.033-.1708v-2.0334c0-.303-.2742-.5497-.6113-.5497l-8.0017.0011c-2.3188,0-4.2334,1.7504-4.2334,3.8995v2.4334c0,2.3198,1.7504,4.2057,3.9018,4.2057h5.6069c.824,0,1.486.7292,1.486,1.627v.39c0,.8239-.7215,1.4926-1.6182,1.4926h-8.7651c-.2633,0-.4946.1531-.5772.3778-.0231.0628-.0342.119-.0342.1719v2.0334c0,.3041.2744.5508.6114.5508h7.1745l2.4333-.0011c2.3188,0,4.2003-1.7504,4.2003-3.9017v-2.0181Z" fill="#ffffff"/>
+                            <path d="M71.19,14.9668h-7.4575c-.3041,0-.5497.2754-.5497.6125v10.1057c0,.3382.2456.6114.5485.6114h2.3221c.303,0,.5497-.2732.5497-.6114l.0033-7.5875,4.2003.0011c1.7746,0,3.2176,1.3428,3.2176,2.994v5.5177c0,1.6501-1.443,2.4036-3.2176,2.4036l-7.6239.0077v3.1296l7.6239-.0034c3.6604,0,6.6391-2.1601,6.6391-5.5375v-5.5541c0-3.2407-2.7198-6.0894-6.2558-6.0894" fill="#ffffff"/>
+                            <path d="M82.8307,25.7918l-.0056-5.7435c0-.3371-.2467-.6113-.5497-.6113h-2.3165c-.303,0-.5508.2742-.5508.6113v5.7435l.0055,5.7436c0,.3371.2467.6113.5508.6113h2.3166c.3029,0,.5497-.2742.5497-.6113v-5.7436Z" fill="#ffffff"/>
+                            <path d="M82.8307,16.2721l-.0056-.6951c0-.336-.2467-.6103-.5497-.6103h-2.3165c-.303,0-.5508.2743-.5508.6103v.6951l.0055,1.2172c0,.336.2467.6103.5508.6103h2.3166c.3029,0,.5497-.2743.5497-.6103v-1.2172Z" fill="#ffffff"/>
+                        </g>
+                    </svg>
+                </div>
+                <div class="header-divider" aria-hidden="true"></div>
+                <div class="title" id="app-title">Entre Quarts</div>
+            </div>
+            <div class="header-buttons">
+                <button class="btn-mode" onclick="toggleDarkMode()"><i data-lucide="moon"></i> Mode</button>
+                <button class="btn-config" onclick="ouvrirConfig()"><i data-lucide="settings"></i> Paramètres</button>
+                <button class="btn-nouveau" onclick="nouveau()"><i data-lucide="file-plus"></i> Nouveau</button>
+                <button class="btn-historique" onclick="ouvrirHistorique()"><i data-lucide="history"></i> Historique</button>
+                <button class="btn-save" onclick="sauvegarder()"><i data-lucide="save"></i> Enregistrer</button>
+                <button class="btn-export" onclick="exporterPDF()"><i data-lucide="file-down"></i> Export PDF</button>
+            </div>
+        </div>
+
+        <div class="fil-energies" aria-hidden="true"></div>
+
+        <div class="redacteur-section">
+            <label>SED:</label>
+            <input type="text" id="redacteur" list="sed-datalist" placeholder="Nom du rédacteur" autocomplete="off">
+            <datalist id="sed-datalist"></datalist>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('soir-nuit')">APRÈS-MIDI → NUIT</button>
+            <button class="tab" onclick="switchTab('nuit-matin')">NUIT → MATIN</button>
+            <button class="tab" onclick="switchTab('matin-soir')">MATIN → APRÈS-MIDI</button>
+        </div>
+
+        <div id="zones-container"></div>
+
+        <div class="info">
+            <i data-lucide="info"></i> <strong>Entre Quarts</strong> — Outil de passation pour ASGARD, par Maxime Giraud
+        </div>
+    </div>
+
+    <!-- Modale historique -->
+    <div class="modal-overlay" id="modal-historique">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i data-lucide="history"></i> Historique des passations</h2>
+                <button class="btn-close" onclick="fermerHistorique()"><i data-lucide="x"></i> Fermer</button>
+            </div>
+            <div id="historique-liste"></div>
+            <div id="historique-preview"></div>
+        </div>
+    </div>
+
+    <!-- Modale paramètres -->
+    <div class="modal-overlay" id="modal-config">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i data-lucide="settings"></i> Paramètres</h2>
+                <button class="btn-close" onclick="fermerConfig()"><i data-lucide="x"></i> Fermer</button>
+            </div>
+
+            <div class="config-tabs">
+                <button class="config-tab active" data-panel="agence" onclick="switchConfigTab('agence')"><i data-lucide="building"></i> Agence</button>
+                <button class="config-tab" data-panel="sed" onclick="switchConfigTab('sed')"><i data-lucide="users"></i> Rédacteurs SED</button>
+                <button class="config-tab" data-panel="checklist" onclick="switchConfigTab('checklist')"><i data-lucide="clipboard-check"></i> Checklist</button>
+                <button class="config-tab" data-panel="backup" onclick="switchConfigTab('backup')"><i data-lucide="database"></i> Sauvegarde</button>
+            </div>
+
+            <div class="config-panel active" id="panel-agence">
+                <div id="form-config"></div>
+            </div>
+
+            <div class="config-panel" id="panel-sed">
+                <p style="font-size:13px;color:var(--enedis-gris);margin-bottom:12px;">
+                    Les rédacteurs enregistrés ici seront proposés en auto-complétion dans le champ "SED" lors de la saisie d'une passation.
+                </p>
+                <div class="sed-list" id="sed-list"></div>
+                <button class="btn-dept-add" onclick="ajouterSED()" style="margin-top:12px;"><i data-lucide="plus"></i> Ajouter un rédacteur</button>
+            </div>
+
+            <div class="config-panel" id="panel-checklist">
+                <p style="font-size:13px;color:var(--enedis-gris);margin-bottom:12px;">
+                    Personnalisez les vérifications affichées dans chaque créneau. Le titre et les items sont configurables par onglet.
+                </p>
+                <div id="checklist-config-list"></div>
+                <div style="display:none;"><button onclick="ajouterCheckItem()"></button></div>
+            </div>
+
+            <div class="config-panel" id="panel-backup">
+                <div class="backup-section">
+                    <h3><i data-lucide="download"></i> Exporter la configuration</h3>
+                    <p>Téléchargez un fichier contenant votre agence, vos départements et vos rédacteurs. Utile pour transférer la configuration vers un autre poste ou pour en faire une sauvegarde.</p>
+                    <button class="btn-save" onclick="exporterConfig()"><i data-lucide="file-down"></i> Télécharger la configuration</button>
+                </div>
+                <div class="backup-section">
+                    <h3><i data-lucide="upload"></i> Importer une configuration</h3>
+                    <p>Glissez-déposez un fichier de configuration exporté précédemment, ou cliquez pour en sélectionner un. Les paramètres actuels seront remplacés.</p>
+                    <div class="dropzone" id="dropzone" onclick="document.getElementById('import-file').click()"
+                         ondragover="event.preventDefault();this.classList.add('dragover')"
+                         ondragleave="this.classList.remove('dragover')"
+                         ondrop="dropConfig(event)">
+                        <i data-lucide="file-up"></i>
+                        <span>Glisser le fichier JSON ici<br><small>ou cliquer pour parcourir</small></span>
+                    </div>
+                    <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importerConfig(event)">
+                </div>
+            </div>
+
+            <div style="margin-top:20px;display:flex;justify-content:space-between;gap:10px;">
+                <button class="btn-suppr" onclick="reinitialiserConfig()" style="padding:10px 16px;"><i data-lucide="rotate-ccw"></i> Tout réinitialiser</button>
+                <button class="btn-save" onclick="validerConfig()"><i data-lucide="check"></i> Enregistrer</button>
+            </div>
+        </div>
+    </div>
+    <!-- Container toasts -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <script>
+        // ========== COUCHE DE STOCKAGE FICHIER ==========
+        const fileStore = {
+            dirHandle: null,
+            fileName: 'entrequarts_data.json',
+            supported: ('showDirectoryPicker' in window),
+
+            async connecter() {
+                try {
+                    this.dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                    await this.lire();
+                    toast('Dossier connecté', 'success');
+                    majIndicateurStockage();
+                    return true;
+                } catch(e) {
+                    if (e.name !== 'AbortError') toast('Impossible de connecter le dossier', 'error');
+                    return false;
+                }
+            },
+
+            async lire() {
+                if (!this.dirHandle) return null;
+                try {
+                    const fh = await this.dirHandle.getFileHandle(this.fileName);
+                    const file = await fh.getFile();
+                    return JSON.parse(await file.text());
+                } catch(e) { return null; }
+            },
+
+            async ecrire(obj) {
+                if (!this.dirHandle) return false;
+                try {
+                    const fh = await this.dirHandle.getFileHandle(this.fileName, { create: true });
+                    const w = await fh.createWritable();
+                    await w.write(JSON.stringify(obj, null, 2));
+                    await w.close();
+                    return true;
+                } catch(e) { toast('Erreur de sauvegarde fichier', 'error'); return false; }
+            },
+
+            estConnecte() { return this.dirHandle !== null; }
+        };
+
+        // ========== PERSISTENCE ==========
+        function lireHistorique() {
+            return JSON.parse(localStorage.getItem('passations_historique') || '[]');
+        }
+
+        async function sauverHistorique(historique) {
+            localStorage.setItem('passations_historique', JSON.stringify(historique));
+            if (fileStore.estConnecte()) {
+                await fileStore.ecrire({ config, data, historique });
+            }
+        }
+
+        async function sauverToutEtat() {
+            localStorage.setItem('passation_config', JSON.stringify(config));
+            localStorage.setItem('passation_data', JSON.stringify(data));
+            if (fileStore.estConnecte()) {
+                await fileStore.ecrire({ config, data, historique: lireHistorique() });
+            }
+        }
+
+        function majIndicateurStockage() {
+            const el = document.getElementById('stockage-status');
+            const btn = document.getElementById('btn-connecter');
+            if (!el) return;
+            if (fileStore.estConnecte()) {
+                el.innerHTML = '<i data-lucide="hard-drive"></i> Fichier partagé connecté';
+                el.className = 'stockage-status connected';
+                if (btn) btn.style.display = 'none';
+            } else {
+                el.innerHTML = '<i data-lucide="alert-circle"></i> Stockage local uniquement';
+                el.className = 'stockage-status local';
+                if (btn) btn.style.display = '';
+            }
+            refreshIcons();
+        }
+
+        async function connecterDossier() {
+            if (!fileStore.supported) {
+                toast('Votre navigateur ne supporte pas cette fonction. Utilisez Chrome ou Edge.', 'error', 5000);
+                return;
+            }
+            const ok = await fileStore.connecter();
+            if (!ok) return;
+            const etat = await fileStore.lire();
+            if (etat) {
+                if (etat.config) {
+                    config = etat.config;
+                    if (!Array.isArray(config.sedList)) config.sedList = [];
+                    if (!config.checklists) config.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
+                    zones = config.departements;
+                    localStorage.setItem('passation_config', JSON.stringify(config));
+                    appliquerConfig();
+                    rafraichirDatalistSED();
+                }
+                if (etat.data) { data = etat.data; localStorage.setItem('passation_data', JSON.stringify(data)); }
+                if (etat.historique) { localStorage.setItem('passations_historique', JSON.stringify(etat.historique)); }
+                renderZones();
+                toast('Données chargées depuis le dossier partagé', 'success');
+            } else {
+                await sauverToutEtat();
+                toast('Fichier de données créé dans le dossier partagé', 'success');
+            }
+        }
+
+        // ========== CONFIGURATION ==========
+        const DEFAULT_CONFIG = {
+            agence: 'ASGARD Limousin',
+            region: 'Limousin',
+            departements: ['Corrèze', 'Creuse', 'Haute-Vienne'],
+            sedList: [
+            'Maxime Giraud',
+            'Sylvain Martinaud',
+            'Stéphane Granger',
+            'Aurélien Legrand',
+            'Jeoffrey Dejoux',
+            'Vincent Courtioux',
+            'Thomas Nicolle',
+            'Stéphane Marchives',
+            'Lucas Dufour',
+            'Jean Michel Crier',
+            'Paul Tourteau',
+            'Christophe Gradowski',
+            'Maxime Longour'
+        ],
+            checklists: {
+                'soir-nuit': {
+                    titre: 'Passation AMTI',
+                    items: ['CREUSE', 'HAUTE-VIENNE', 'TULLE/USSEL', 'BRIVE']
+                },
+                'nuit-matin': {
+                    titre: 'Vérifications prise de poste',
+                    items: ['VOK', 'Nom du TST', "Tableau d'Accès", 'Vérif BDT', 'Inforéseau', 'Controles Aval LEIA', 'Vérif heures Agents']
+                },
+                'matin-soir': {
+                    titre: '',
+                    items: []
+                }
+            }
+        };
+
+        function loadConfig() {
+            const saved = localStorage.getItem('passation_config');
+            if (saved) {
+                try {
+                    const cfg = JSON.parse(saved);
+                    if (!Array.isArray(cfg.sedList)) cfg.sedList = [];
+                    // Migration : ancienne structure checklist → checklists
+                    if (!cfg.checklists) {
+                        const oldItems = Array.isArray(cfg.checklist) ? cfg.checklist : DEFAULT_CONFIG.checklists['nuit-matin'].items.slice();
+                        cfg.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
+                        cfg.checklists['nuit-matin'].items = oldItems;
+                        delete cfg.checklist;
+                    }
+                    return cfg;
+                } catch(e) { return null; }
+            }
+            return null;
+        }
+
+        function saveConfig(cfg) {
+            localStorage.setItem('passation_config', JSON.stringify(cfg));
+            sauverToutEtat();
+        }
+
+        let config = loadConfig() || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        let zones = config.departements;
+        let currentTab = 'soir-nuit';
+        let data = initData();
+
+        // État des checks (non persisté dans l'historique, juste en session)
+        let checkStates = {};
+
+        // ========== TOASTS ==========
+        function toast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const icons = {
+                success: 'check-circle',
+                error: 'x-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.innerHTML = `<i data-lucide="${icons[type] || 'info'}"></i><span>${message}</span>`;
+            container.appendChild(t);
+
+            if (window.lucide) lucide.createIcons();
+
+            setTimeout(() => {
+                t.classList.add('leaving');
+                setTimeout(() => t.remove(), 300);
+            }, duration);
+        }
+
+        // Rafraîchit les icônes après chaque render
+        function refreshIcons() {
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // ========== CONFIG / ACCUEIL ==========
+        function renderFormConfig(containerId, cfg) {
+            const container = document.getElementById(containerId);
+            const deptItems = cfg.departements.map((d, i) => `
+                <div class="dept-item">
+                    <input type="text" value="${d.replace(/"/g, '&quot;')}" data-idx="${i}" placeholder="Nom du département">
+                    <button class="btn-dept-remove" onclick="retirerDept(${i}, '${containerId}')"><i data-lucide="trash-2"></i></button>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="form-row">
+                    <label>Nom de l'agence</label>
+                    <input type="text" id="${containerId}-agence" value="${(cfg.agence || '').replace(/"/g, '&quot;')}" placeholder="Ex: ASGARD Limousin">
+                </div>
+                <div class="form-row">
+                    <label>Région</label>
+                    <input type="text" id="${containerId}-region" value="${(cfg.region || '').replace(/"/g, '&quot;')}" placeholder="Ex: Limousin, Bretagne, PACA...">
+                </div>
+                <div class="form-row">
+                    <label>Départements couverts</label>
+                    <div class="dept-list" id="${containerId}-depts">${deptItems}</div>
+                    <button class="btn-dept-add" onclick="ajouterDept('${containerId}')"><i data-lucide="plus"></i> Ajouter un département</button>
+                </div>
+            `;
+            refreshIcons();
+        }
+
+        function collecterConfig(containerId) {
+            const agence = document.getElementById(`${containerId}-agence`).value.trim();
+            const region = document.getElementById(`${containerId}-region`).value.trim();
+            const deptInputs = document.querySelectorAll(`#${containerId}-depts input`);
+            const departements = Array.from(deptInputs)
+                .map(i => i.value.trim())
+                .filter(v => v.length > 0);
+            return { agence, region, departements };
+        }
+
+        // État temporaire pendant l'édition (pour les +/- de dept sans perdre les saisies)
+        let tempConfig = null;
+
+        function ajouterDept(containerId) {
+            tempConfig = collecterConfig(containerId);
+            tempConfig.departements.push('');
+            renderFormConfig(containerId, tempConfig);
+        }
+
+        function retirerDept(idx, containerId) {
+            tempConfig = collecterConfig(containerId);
+            tempConfig.departements.splice(idx, 1);
+            renderFormConfig(containerId, tempConfig);
+        }
+
+        function ouvrirConfig() {
+            tempConfig = JSON.parse(JSON.stringify(config));
+            if (!Array.isArray(tempConfig.sedList)) tempConfig.sedList = [];
+            if (!tempConfig.checklists) tempConfig.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
+            renderFormConfig('form-config', tempConfig);
+            renderSedList();
+            renderChecklistConfig();
+            switchConfigTab('agence');
+            document.getElementById('modal-config').classList.add('open');
+        }
+
+        function fermerConfig() {
+            document.getElementById('modal-config').classList.remove('open');
+        }
+
+        function switchConfigTab(panelName) {
+            document.querySelectorAll('.config-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.panel === panelName);
+            });
+            document.querySelectorAll('.config-panel').forEach(p => {
+                p.classList.toggle('active', p.id === `panel-${panelName}`);
+            });
+            refreshIcons();
+        }
+
+        // ----- SED (rédacteurs) -----
+        function renderSedList() {
+            const container = document.getElementById('sed-list');
+            if (!container) return;
+            if (!tempConfig.sedList || tempConfig.sedList.length === 0) {
+                container.innerHTML = '<div class="sed-empty">Aucun rédacteur enregistré pour le moment. Cliquez sur "Ajouter un rédacteur" pour commencer.</div>';
+                return;
+            }
+            container.innerHTML = tempConfig.sedList.map((nom, i) => `
+                <div class="sed-item">
+                    <input type="text" value="${nom.replace(/"/g, '&quot;')}" placeholder="Nom du rédacteur" data-sed-idx="${i}" oninput="majSED(${i}, this.value)">
+                    <button class="btn-dept-remove" onclick="supprimerSED(${i})"><i data-lucide="trash-2"></i></button>
+                </div>
+            `).join('');
+            refreshIcons();
+        }
+
+        function ajouterSED() {
+            if (!Array.isArray(tempConfig.sedList)) tempConfig.sedList = [];
+            tempConfig.sedList.push('');
+            renderSedList();
+            // Focus sur le dernier champ ajouté
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('#sed-list input');
+                if (inputs.length) inputs[inputs.length - 1].focus();
+            }, 50);
+        }
+
+        function supprimerSED(idx) {
+            tempConfig.sedList.splice(idx, 1);
+            renderSedList();
+        }
+
+        function majSED(idx, value) {
+            tempConfig.sedList[idx] = value;
+        }
+
+        function rafraichirDatalistSED() {
+            const datalist = document.getElementById('sed-datalist');
+            if (!datalist) return;
+            const liste = (config.sedList || []).filter(s => s && s.trim());
+            datalist.innerHTML = liste.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
+        }
+
+        // ----- Checklist config -----
+        function renderChecklistConfig() {
+            const container = document.getElementById('checklist-config-list');
+            if (!container) return;
+            const labels = {
+                'soir-nuit': 'APRÈS-MIDI → NUIT',
+                'nuit-matin': 'NUIT → MATIN',
+                'matin-soir': 'MATIN → APRÈS-MIDI'
+            };
+            let html = '';
+            ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
+                const cl = tempConfig.checklists?.[tab] || { titre: '', items: [] };
+                html += `
+                    <div style="margin-bottom:18px;">
+                        <div style="font-weight:700;font-size:13px;color:var(--enedis-bleu);margin-bottom:8px;">${labels[tab]}</div>
+                        <div style="margin-bottom:6px;">
+                            <label style="font-size:12px;color:var(--enedis-gris);">Titre du bloc</label>
+                            <input type="text" value="${(cl.titre || '').replace(/"/g, '&quot;')}"
+                                   oninput="majChecklistTitre('${tab}', this.value)"
+                                   placeholder="Ex: Passation AMTI"
+                                   style="width:100%;padding:8px 12px;border:2px solid var(--enedis-gris-bord);border-radius:6px;font-size:13px;margin-top:4px;">
+                        </div>
+                        <div id="cl-items-${tab}">
+                            ${(cl.items || []).map((item, i) => `
+                                <div class="sed-item">
+                                    <input type="text" value="${item.replace(/"/g, '&quot;')}"
+                                           placeholder="Nom de la vérification"
+                                           oninput="majCheckItem('${tab}', ${i}, this.value)">
+                                    <button class="btn-dept-remove" onclick="supprimerCheckItem('${tab}', ${i})"><i data-lucide="trash-2"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="btn-dept-add" onclick="ajouterCheckItemConfig('${tab}')" style="margin-top:6px;">
+                            <i data-lucide="plus"></i> Ajouter
+                        </button>
+                    </div>
+                    <hr style="border:none;border-top:1px solid var(--enedis-gris-bord);margin-bottom:16px;">
+                `;
+            });
+            container.innerHTML = html;
+            refreshIcons();
+        }
+
+        function majChecklistTitre(tab, value) {
+            if (!tempConfig.checklists[tab]) tempConfig.checklists[tab] = { titre: '', items: [] };
+            tempConfig.checklists[tab].titre = value;
+        }
+
+        function ajouterCheckItemConfig(tab) {
+            if (!tempConfig.checklists[tab]) tempConfig.checklists[tab] = { titre: '', items: [] };
+            tempConfig.checklists[tab].items.push('');
+            renderChecklistConfig();
+        }
+
+        function supprimerCheckItem(tab, idx) {
+            if (!tempConfig.checklists[tab]) return;
+            tempConfig.checklists[tab].items.splice(idx, 1);
+            renderChecklistConfig();
+        }
+
+        function majCheckItem(tab, idx, value) {
+            if (!tempConfig.checklists[tab]) return;
+            tempConfig.checklists[tab].items[idx] = value;
+        }
+
+        // ----- Backup export/import -----
+        function exporterConfig() {
+            const dataToExport = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                config: config
+            };
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const safeName = (config.agence || 'agence').replace(/[^a-z0-9]/gi, '_');
+            a.download = `EntreQuarts_Config_${safeName}_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast('Configuration exportée ✓', 'success');
+        }
+
+        function dropConfig(event) {
+            event.preventDefault();
+            document.getElementById('dropzone').classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            if (!file || !file.name.endsWith('.json')) {
+                toast('Déposez un fichier .json', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => traiterImportConfig(e.target.result);
+            reader.readAsText(file);
+        }
+
+        function importerConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => traiterImportConfig(e.target.result);
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function traiterImportConfig(text) {
+            try {
+                const imported = JSON.parse(text);
+                const cfg = imported.config || imported;
+                if (!cfg.agence || !Array.isArray(cfg.departements) || cfg.departements.length === 0) {
+                    toast('Fichier de configuration invalide', 'error');
+                    return;
+                }
+                if (!Array.isArray(cfg.sedList)) cfg.sedList = [];
+                if (!cfg.checklists) cfg.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
+                if (!confirm(`Importer la configuration "${cfg.agence}" ? Les paramètres actuels seront remplacés.`)) return;
+                config = cfg;
+                zones = cfg.departements;
+                saveConfig(cfg);
+                const oldData = data;
+                data = initData();
+                ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
+                    zones.forEach(z => {
+                        if (oldData[tab] && oldData[tab][z]) data[tab][z] = oldData[tab][z];
+                    });
+                });
+                saveData();
+                appliquerConfig();
+                rafraichirDatalistSED();
+                fermerConfig();
+                renderZones();
+                toast('Configuration importée ✓', 'success');
+            } catch(err) {
+                toast('Erreur lors de la lecture du fichier', 'error');
+            }
+        }
+
+        function validerConfig() {
+            const cfg = collecterConfig('form-config');
+            if (!cfg.agence) { toast("Le nom de l'agence est requis", 'error'); return; }
+            if (cfg.departements.length === 0) { toast('Au moins un département est requis', 'error'); return; }
+
+            // Récupérer aussi les SED et la checklist depuis tempConfig
+            cfg.sedList = (tempConfig.sedList || []).filter(s => s && s.trim()).map(s => s.trim());
+            cfg.checklists = tempConfig.checklists || JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
+
+            // Détection changements de départements
+            const anciensDepts = zones.slice();
+            const nouveauxDepts = cfg.departements;
+            const deptsChange = JSON.stringify(anciensDepts) !== JSON.stringify(nouveauxDepts);
+
+            config = cfg;
+            zones = cfg.departements;
+            saveConfig(cfg);
+
+            if (deptsChange) {
+                // On préserve les données existantes qui matchent, on initialise les nouvelles
+                const oldData = data;
+                data = initData();
+                ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
+                    zones.forEach(z => {
+                        if (oldData[tab] && oldData[tab][z]) {
+                            data[tab][z] = oldData[tab][z];
+                        }
+                    });
+                });
+                saveData();
+            }
+
+            appliquerConfig();
+            rafraichirDatalistSED();
+            fermerConfig();
+            renderZones();
+            toast('Paramètres mis à jour ✓', 'success');
+        }
+
+        function reinitialiserConfig() {
+            if (!confirm('Réinitialiser la configuration et toutes les données en cours ? Cette action est irréversible.')) return;
+            localStorage.removeItem('passation_config');
+            localStorage.removeItem('passation_data');
+            location.reload();
+        }
+
+        function appliquerConfig() {
+            // Titre de l'app : toujours "Entre Quarts", l'agence est contextuelle
+            const titre = document.getElementById('app-title');
+            if (titre) {
+                titre.textContent = 'Entre Quarts';
+            }
+            // Titre onglet navigateur
+            document.title = `Entre Quarts — ${config.agence || 'ASGARD'}`;
+        }
+
+        function initData() {
+            const zonesLocal = (typeof zones !== 'undefined' && zones) ? zones : (config ? config.departements : DEFAULT_CONFIG.departements);
+            const result = {
+                'soir-nuit': {},
+                'nuit-matin': {},
+                'matin-soir': {}
+            };
+            zonesLocal.forEach(z => {
+                result['soir-nuit'][z] = { agents: [], libre: '' };
+                result['nuit-matin'][z] = { agents: [], reports: '', chantiersNOK: '', libre: '', amtiAppele: false };
+                result['matin-soir'][z] = { agents: [], chantiersEnCours: '', libre: '' };
+            });
+            return result;
+        }
+
+        function saveData() {
+            localStorage.setItem('passation_data', JSON.stringify(data));
+            if (fileStore.estConnecte()) sauverToutEtat();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderZones();
+        }
+
+        // Mappage zone → libellé secondaire (n° département / type d'astreinte)
+        const DEPT_MAP = {
+            'corrèze': 'Département 19',
+            'creuse': 'Département 23',
+            'haute-vienne': 'Département 87',
+            'tulle/ussel': 'Antenne CORRÈZE · 19',
+            'tulle': 'Antenne CORRÈZE · 19',
+            'ussel': 'Antenne CORRÈZE · 19',
+            'brive': 'Antenne CORRÈZE · 19',
+            'limoges': 'Antenne HAUTE-VIENNE · 87',
+            'guéret': 'Antenne CREUSE · 23',
+        };
+        function departementLabel(zone) {
+            if (!zone) return '';
+            const key = zone.toString().trim().toLowerCase();
+            return DEPT_MAP[key] || '';
+        }
+
+        function renderZones() {
+            const container = document.getElementById('zones-container');
+            container.innerHTML = '';
+
+            const cl = config.checklists?.[currentTab];
+            if (cl && cl.items && cl.items.length > 0) {
+                const checklistEl = renderChecklist();
+                if (checklistEl) container.appendChild(checklistEl);
+            }
+
+            zones.forEach(zone => {
+                const zoneDiv = document.createElement('div');
+                zoneDiv.className = 'zone';
+
+                // Bouton AMTI compact dans le titre, seulement NUIT→MATIN
+                let amtiHtml = '';
+                if (currentTab === 'nuit-matin') {
+                    const amtiDone = data[currentTab][zone]?.amtiAppele || false;
+                    amtiHtml = `
+                        <button class="btn-amti-inline ${amtiDone ? 'done' : ''}" onclick="toggleAmti('${zone}'); event.stopPropagation();">
+                            ${amtiDone ? checkSvgAmti : phoneSvgAmti}
+                            <span>${amtiDone ? 'AMTI ✓' : 'Appeler AMTI'}</span>
+                        </button>
+                    `;
+                }
+
+                zoneDiv.innerHTML = `
+                    <div class="zone-title">
+                        <div class="zone-title-text">
+                            <span>${zone}</span>
+                            ${departementLabel(zone) ? `<span class="zone-title-sub">${departementLabel(zone)}</span>` : ''}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            ${amtiHtml}
+                            <button class="btn-copy" onclick="copierZone('${zone}')"><i data-lucide="copy"></i> Copier pour Teams</button>
+                        </div>
+                    </div>
+                    <div id="zone-${zone}"></div>
+                `;
+                container.appendChild(zoneDiv);
+                renderZoneContent(zone);
+            });
+            refreshIcons();
+        }
+
+        // ========== CHECKLIST PRISE DE POSTE ==========
+        const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.65 4.35 2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+        const checkSvgInline = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;stroke-width:3;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+        function renderChecklist() {
+            const cl = config.checklists?.[currentTab];
+            if (!cl || cl.items.length === 0) return null;
+
+            const items = cl.items;
+            const sessionKey = currentTab;
+            if (!checkStates[sessionKey]) checkStates[sessionKey] = {};
+
+            const doneCount = items.filter((_, i) => checkStates[sessionKey][i]).length;
+            const allDone = doneCount === items.length;
+            const collapsed = checkStates[sessionKey]._collapsed || false;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'checklist-wrapper';
+
+            wrapper.innerHTML = `
+                <div class="checklist-header" onclick="toggleChecklist()">
+                    <h3>
+                        <i data-lucide="clipboard-check"></i>
+                        ${cl.titre || 'Checklist'}
+                        <span class="checklist-counter ${allDone ? 'all-done' : ''}">${doneCount}/${items.length}</span>
+                    </h3>
+                    <span class="checklist-toggle"><i data-lucide="${collapsed ? 'chevron-down' : 'chevron-up'}"></i></span>
+                </div>
+                <div class="checklist-body ${collapsed ? 'collapsed' : ''}" id="checklist-body">
+                    ${items.map((item, i) => {
+                        const done = checkStates[sessionKey][i] || false;
+                        return `
+                            <div class="check-item ${done ? 'checked' : ''}" onclick="toggleCheck(${i})">
+                                <div class="check-dot ${done ? 'done' : ''}">${checkSvgInline}</div>
+                                <span class="check-label">${item}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                    <div class="check-item check-add" onclick="ajouterCheckVolee()" style="min-width:auto;padding:8px 12px;" title="Ajouter une tâche">
+                        <div class="check-dot" style="background:var(--enedis-bleu);margin-right:0;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;stroke-width:3;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return wrapper;
+        }
+
+        function toggleCheck(idx) {
+            const sessionKey = currentTab;
+            if (!checkStates[sessionKey]) checkStates[sessionKey] = {};
+            checkStates[sessionKey][idx] = !checkStates[sessionKey][idx];
+            // Toggle in-place : zéro re-render → zéro clignotement
+            const items = document.querySelectorAll('.checklist-body .check-item');
+            const item = items[idx];
+            if (item) {
+                const dot = item.querySelector('.check-dot');
+                const wasDone = item.classList.contains('checked');
+                item.classList.toggle('checked');
+                if (dot) dot.classList.toggle('done');
+                // MAJ compteur
+                const items2 = (config.checklists?.[currentTab]?.items || []);
+                const doneCount = items2.filter((_, i) => checkStates[sessionKey][i]).length;
+                const counter = document.querySelector('.checklist-counter');
+                if (counter) {
+                    counter.textContent = `${doneCount}/${items2.length}`;
+                    const allDone = doneCount === items2.length;
+                    counter.classList.toggle('all-done', allDone);
+                    counter.classList.remove('bump');
+                    void counter.offsetWidth;
+                    counter.classList.add('bump');
+                    if (allDone && !wasDone) {
+                        const wrapper = counter.closest('.checklist-wrapper');
+                        if (wrapper) setTimeout(() => fireConfetti(wrapper), 120);
+                    }
+                }
+            }
+        }
+
+        function toggleChecklist() {
+            const sessionKey = currentTab;
+            if (!checkStates[sessionKey]) checkStates[sessionKey] = {};
+            checkStates[sessionKey]._collapsed = !checkStates[sessionKey]._collapsed;
+            // Toggle in-place avec animation sans clignotement
+            const body = document.querySelector('.checklist-body');
+            const chevron = document.querySelector('.checklist-toggle [data-lucide]');
+            if (body) {
+                if (checkStates[sessionKey]._collapsed) {
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    void body.offsetWidth;
+                    body.style.maxHeight = '0px';
+                    body.style.opacity = '0';
+                    setTimeout(() => body.classList.add('collapsed'), 320);
+                } else {
+                    body.classList.remove('collapsed');
+                    body.style.maxHeight = '0px';
+                    void body.offsetWidth;
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    body.style.opacity = '1';
+                    setTimeout(() => { body.style.maxHeight = ''; }, 400);
+                }
+            }
+            if (chevron) {
+                chevron.setAttribute('data-lucide', checkStates[sessionKey]._collapsed ? 'chevron-down' : 'chevron-up');
+                refreshIcons();
+            }
+        }
+
+        function refreshChecklistOnly() {
+            const container = document.getElementById('zones-container');
+            const old = container.querySelector('.checklist-wrapper');
+            const nouveau = renderChecklist();
+            if (old && nouveau) { old.replaceWith(nouveau); refreshIcons(); }
+            else if (!old && nouveau) { container.prepend(nouveau); refreshIcons(); }
+        }
+
+        function ajouterCheckVolee() {
+            const nom = prompt('Nom de la tâche :');
+            if (!nom || !nom.trim()) return;
+            if (!config.checklists[currentTab]) return;
+            config.checklists[currentTab].items.push(nom.trim());
+            saveConfig(config);
+            refreshChecklistOnly();
+        }
+
+        const phoneSvgAmti = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.65 4.35 2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+        const checkSvgAmti = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+        function toggleAmti(zone) {
+            if (!data['nuit-matin'][zone]) return;
+            data['nuit-matin'][zone].amtiAppele = !data['nuit-matin'][zone].amtiAppele;
+            saveData();
+            renderZones();
+        }
+
+        function renderZoneContent(zone) {
+            const zoneEl = document.getElementById(`zone-${zone}`);
+            let html = '';
+
+            if (currentTab === 'soir-nuit' || currentTab === 'nuit-matin') {
+                const label = currentTab === 'nuit-matin' ? 'Agents sortis après 21h' : 'Agents sortis';
+                html += `
+                    <div class="section-label"><i data-lucide="users"></i> ${label}</div>
+                    <div id="agents-${zone}"></div>
+                    <button class="btn-add" onclick="addAgent('${zone}')"><i data-lucide="plus"></i> Ajouter agent</button>
+                `;
+            }
+
+            if (currentTab === 'nuit-matin') {
+                html += `
+                    <div class="section-label"><i data-lucide="wrench"></i> Reports de dépannage CAD</div>
+                    <textarea oninput="updateField('${zone}', 'reports', this.value)">${data[currentTab][zone].reports || ''}</textarea>
+                `;
+            }
+
+            if (currentTab === 'nuit-matin') {
+                html += `
+                    <div class="section-label"><i data-lucide="alert-triangle"></i> Chantiers NOK</div>
+                    <textarea oninput="updateField('${zone}', 'chantiersNOK', this.value)">${data[currentTab][zone].chantiersNOK || ''}</textarea>
+                `;
+            }
+
+            if (currentTab === 'matin-soir') {
+                html += `
+                    <div class="section-label"><i data-lucide="users"></i> Agents dehors</div>
+                    <div id="agents-${zone}"></div>
+                    <button class="btn-add" onclick="addAgent('${zone}')"><i data-lucide="plus"></i> Ajouter agent</button>
+                    <div class="section-label"><i data-lucide="hard-hat"></i> Chantiers en cours</div>
+                    <textarea oninput="updateField('${zone}', 'chantiersEnCours', this.value)">${data[currentTab][zone].chantiersEnCours || ''}</textarea>
+                `;
+            }
+
+            const notesClass = currentTab === 'soir-nuit' ? 'textarea-large' : '';
+            html += `
+                <div class="section-label"><i data-lucide="file-text"></i> Notes libres</div>
+                <textarea class="${notesClass}" oninput="updateField('${zone}', 'libre', this.value)">${data[currentTab][zone].libre || ''}</textarea>
+            `;
+
+            zoneEl.innerHTML = html;
+
+            // Render agents pour tous les onglets qui ont une section agents
+            renderAgents(zone);
+        }
+
+        function renderAgents(zone) {
+            const agentsEl = document.getElementById(`agents-${zone}`);
+            const agents = data[currentTab][zone].agents || [];
+            const isNuitMatin = currentTab === 'nuit-matin';
+
+            agentsEl.innerHTML = agents.map((agent, i) => {
+                // Statut unifié 3 options pour tous les créneaux
+                // Migration douce : si pas de statut mais une heureFin → 'heure', sinon 'en-cours'
+                let statut = agent.statut;
+                if (!statut || (statut !== 'heure' && statut !== 'en-cours' && statut !== 'retour')) {
+                    statut = agent.heureFin ? 'heure' : 'en-cours';
+                }
+
+                const heureInputHtml = statut === 'heure'
+                    ? `<input type="time" class="heure-fin-input" value="${agent.heureFin || ''}"
+                              onchange="updateAgent('${zone}', ${i}, 'heureFin', this.value)">`
+                    : '';
+
+                const colFinHtml = `
+                    <div class="col-fin">
+                        <div class="statut-segmented" role="group" aria-label="Statut de l'agent">
+                            <button type="button"
+                                    class="statut-seg ${statut === 'heure' ? 'active' : ''}"
+                                    onclick="updateAgent('${zone}', ${i}, 'statut', 'heure')"
+                                    title="Heure de fin connue">Heure</button>
+                            <button type="button"
+                                    class="statut-seg ${statut === 'en-cours' ? 'active' : ''}"
+                                    onclick="updateAgent('${zone}', ${i}, 'statut', 'en-cours')"
+                                    title="Toujours en intervention">En cours</button>
+                            <button type="button"
+                                    class="statut-seg ${statut === 'retour' ? 'active' : ''}"
+                                    onclick="updateAgent('${zone}', ${i}, 'statut', 'retour')"
+                                    title="Sur le retour">Retour</button>
+                        </div>
+                        ${heureInputHtml}
+                    </div>
+                `;
+
+                // Coche "Prend son 089" — nuit→matin uniquement
+                const prend089 = !!agent.prend089;
+                const extraHtml = isNuitMatin ? `
+                    <div class="col-extra">
+                        <button type="button"
+                                class="toggle-089 ${prend089 ? 'active' : ''}"
+                                onclick="updateAgent('${zone}', ${i}, 'prend089', ${!prend089})"
+                                title="L'agent prend son 089 (récup repos)">
+                            <span class="check-box">
+                                ${prend089 ? '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6.5 5,9.5 10,3"/></svg>' : ''}
+                            </span>
+                            Prend son 089
+                        </button>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="agent-row">
+                        <input class="col-nom" type="text" placeholder="Agent/Équipe" value="${agent.nom || ''}"
+                               oninput="updateAgent('${zone}', ${i}, 'nom', this.value)">
+                        <input class="col-panne" type="text" placeholder="Panne (BI-INC-... | DESCRIPTION)" value="${agent.panne || ''}"
+                               oninput="updateAgent('${zone}', ${i}, 'panne', this.value)">
+                        <input class="col-debut" type="time" value="${agent.heureDebut || ''}"
+                               onchange="updateAgent('${zone}', ${i}, 'heureDebut', this.value)">
+                        ${colFinHtml}
+                        <button class="btn-delete col-suppr" onclick="deleteAgent('${zone}', ${i})"><i data-lucide="trash-2"></i></button>
+                        ${extraHtml}
+                        <textarea class="notes-field col-notes" placeholder="Notes (description longue, observations, contexte...)"
+                                  oninput="updateAgent('${zone}', ${i}, 'notes', this.value)">${agent.notes || ''}</textarea>
+                    </div>
+                `;
+            }).join('');
+            refreshIcons();
+        }
+
+        function addAgent(zone) {
+            if (!data[currentTab][zone].agents) data[currentTab][zone].agents = [];
+            const newAgent = {nom: '', panne: '', heureDebut: '', heureFin: '', notes: '', statut: 'en-cours'};
+            if (currentTab === 'nuit-matin') newAgent.prend089 = false;
+            data[currentTab][zone].agents.push(newAgent);
+            renderAgents(zone);
+            saveData();
+        }
+
+        function deleteAgent(zone, index) {
+            data[currentTab][zone].agents.splice(index, 1);
+            renderAgents(zone);
+            saveData();
+        }
+
+        function updateAgent(zone, index, field, value) {
+            data[currentTab][zone].agents[index][field] = value;
+            saveData();
+            // Re-render si changement de statut (pour afficher/cacher l'input heure)
+            // ou si toggle 089 (pour mettre à jour la coche)
+            if (field === 'heureDebut' || field === 'heureFin' || field === 'statut' || field === 'prend089') {
+                renderAgents(zone);
+            }
+        }
+
+        function updateField(zone, field, value) {
+            data[currentTab][zone][field] = value;
+            saveData();
+        }
+
+        function nouveau() {
+            if (confirm('Créer une nouvelle passation ? Toutes les données non sauvegardées seront perdues.')) {
+                data = initData();
+                document.getElementById('redacteur').value = '';
+                saveData();
+                renderZones();
+            }
+        }
+
+        function sauvegarder() {
+            const redacteur = document.getElementById('redacteur').value.trim();
+            if (!redacteur) {
+                toast('Nom du rédacteur requis', 'error');
+                return;
+            }
+            
+            const passation = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                type: currentTab,
+                redacteur: redacteur,
+                data: data[currentTab]
+            };
+
+            let historique = lireHistorique();
+            historique.unshift(passation);
+            historique = historique.slice(0, 50);
+            sauverHistorique(historique);
+            
+            saveData();
+            toast('Passation enregistrée', 'success');
+        }
+
+        function exporterPDF() {
+            const redacteur = document.getElementById('redacteur').value.trim();
+            if (!redacteur) {
+                toast('Nom du rédacteur requis', 'error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+            const types = {
+                'soir-nuit': 'APRES-MIDI > NUIT',
+                'nuit-matin': 'NUIT > MATIN',
+                'matin-soir': 'MATIN > APRES-MIDI'
+            };
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            const heureStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+            // ─── Couleurs Enedis ───
+            const C_BLEU = [20, 35, 220];          // #1423DC
+            const C_BLEU_FONCE = [10, 20, 130];
+            const C_VERT = [65, 165, 125];         // #41A57D vert anis
+            const C_VERT_ENEDIS = [160, 191, 58];  // vert anis logo
+            const C_ROUGE = [220, 53, 69];
+            const C_ORANGE = [245, 145, 0];
+            const C_TXT = [25, 30, 55];
+            const C_TXT_DOUX = [105, 115, 145];
+            const C_BORDURE = [220, 224, 235];
+            const C_FOND_DOUX = [248, 249, 253];
+            const C_FOND_HEAD_ZONE = [233, 236, 250];
+
+            // ─── Géométrie ───
+            const PAGE_W = 210;
+            const PAGE_H = 297;
+            const MARGIN = 10;
+            const HEADER_H = 14;
+            const FOOTER_H = 7;
+            const CONTENT_TOP = HEADER_H + 4;
+            const CONTENT_BOTTOM = PAGE_H - FOOTER_H - 3;
+
+            // 1 colonne pleine largeur, zones empilées verticalement
+            const COL_W = PAGE_W - 2 * MARGIN;
+            const ZONE_GAP = 4;
+
+            // ─── Helpers ───
+            function fillRect(x, y, w, h, color) {
+                doc.setFillColor(...color);
+                doc.rect(x, y, w, h, 'F');
+            }
+            function setFont(weight, size, color) {
+                doc.setFont('helvetica', weight);
+                doc.setFontSize(size);
+                if (color) doc.setTextColor(...color);
+            }
+
+            // ─── HEADER (bandeau bleu compact, 2 niveaux) ───
+            function dessinerHeader() {
+                fillRect(0, 0, PAGE_W, HEADER_H, C_BLEU);
+                // Bande verte anis fine sous le header
+                fillRect(0, HEADER_H, PAGE_W, 0.6, C_VERT_ENEDIS);
+
+                // Ligne 1 : titre à gauche, date+heure à droite
+                setFont('bold', 11, [255,255,255]);
+                doc.text('ENTRE QUARTS', MARGIN, 6.5);
+                setFont('normal', 8.5, [255,255,255]);
+                doc.text(`${dateStr}  -  ${heureStr}`, PAGE_W - MARGIN, 6.5, { align: 'right' });
+
+                // Ligne 2 : type de passation à gauche (en clair)
+                setFont('normal', 8.5, [200,210,255]);
+                doc.text(types[currentTab], MARGIN, 11.5);
+            }
+
+            // ─── FOOTER ───
+            function dessinerFooter(pageNum, pageTotal) {
+                fillRect(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, C_FOND_DOUX);
+                setFont('normal', 9, C_TXT_DOUX);
+                doc.text(`Rédacteur : ${redacteur}`, MARGIN, PAGE_H - 3);
+                doc.text(`${config.agence || 'ASGARD'}`, PAGE_W / 2, PAGE_H - 3, { align: 'center' });
+                doc.text(`Page ${pageNum}/${pageTotal}`, PAGE_W - MARGIN, PAGE_H - 3, { align: 'right' });
+            }
+
+            // ─── Mappage département ───
+            const DEPT = {
+                'corrèze': '19', 'creuse': '23', 'haute-vienne': '87'
+            };
+
+            // ─── Préparation des données par zone ───
+            // On précalcule la hauteur nécessaire de chaque zone pour adapter la taille de police
+            function buildZoneBlocks(zone) {
+                const zd = data[currentTab][zone] || {};
+                const blocks = [];
+
+                // AMTI flag — tout en haut juste après le bandeau département
+                if (currentTab === 'nuit-matin' && zd.amtiAppele) {
+                    blocks.push({ kind: 'flag', label: 'AMTI à appeler', color: C_ROUGE });
+                }
+
+                // Bloc Agents
+                if (zd.agents?.length) {
+                    const agentLabel = currentTab === 'nuit-matin'
+                        ? 'AGENTS SORTIS APRÈS 21H'
+                        : (currentTab === 'matin-soir' ? 'AGENTS DEHORS' : 'AGENTS SORTIS');
+                    const items = zd.agents.map(a => {
+                        const nom = (a.nom || '—').trim();
+                        const panne = (a.panne || '—').trim();
+                        const debut = a.heureDebut || '—';
+
+                        // Statut unifié (avec fallback rétro-compat)
+                        let statut = a.statut;
+                        if (!statut || (statut !== 'heure' && statut !== 'en-cours' && statut !== 'retour')) {
+                            statut = a.heureFin ? 'heure' : 'en-cours';
+                        }
+
+                        let horaire;
+                        if (statut === 'heure' && a.heureFin) {
+                            horaire = `${debut} > ${a.heureFin}`;
+                        } else if (statut === 'retour') {
+                            horaire = `${debut} > retour`;
+                        } else {
+                            horaire = `${debut} > en cours`;
+                        }
+
+                        return {
+                            nom,
+                            panne,
+                            horaire,
+                            notes: (a.notes || '').trim(),
+                            prend089: currentTab === 'nuit-matin' && !!a.prend089
+                        };
+                    });
+                    blocks.push({ kind: 'agents', label: agentLabel, items });
+                }
+
+                // Reports CAD (nuit-matin)
+                if (currentTab === 'nuit-matin' && zd.reports?.trim()) {
+                    blocks.push({ kind: 'text', label: 'REPORTS DÉPANNAGE CAD', text: zd.reports.trim() });
+                }
+                // Chantiers NOK
+                if (currentTab === 'nuit-matin' && zd.chantiersNOK?.trim()) {
+                    blocks.push({ kind: 'text', label: 'CHANTIERS NOK', text: zd.chantiersNOK.trim(), color: C_ROUGE });
+                }
+                // Chantiers en cours (matin-soir)
+                if (currentTab === 'matin-soir' && zd.chantiersEnCours?.trim()) {
+                    blocks.push({ kind: 'text', label: 'CHANTIERS EN COURS', text: zd.chantiersEnCours.trim() });
+                }
+                // Notes
+                if (zd.libre?.trim()) {
+                    blocks.push({ kind: 'text', label: 'NOTES', text: zd.libre.trim() });
+                }
+
+                return blocks;
+            }
+
+            // ─── Rendu d'une zone empilée (pleine largeur) ───
+            function renderZoneBlock(zone, x, yStart, w, fontScale) {
+                let yy = yStart;
+
+                // Bandeau zone — compact
+                const headH = 8;
+                fillRect(x, yy, w, headH, C_FOND_HEAD_ZONE);
+                fillRect(x, yy, 1.5, headH, C_BLEU);
+
+                setFont('bold', 12 * fontScale, C_BLEU);
+                doc.text(zone.toUpperCase(), x + 4, yy + 5.5);
+
+                const deptKey = zone.toLowerCase();
+                if (DEPT[deptKey]) {
+                    setFont('normal', 9 * fontScale, C_TXT_DOUX);
+                    doc.text(`Dpt ${DEPT[deptKey]}`, x + w - 3, yy + 5.5, { align: 'right' });
+                }
+                yy += headH + 2.5;
+
+                const blocks = buildZoneBlocks(zone);
+
+                if (blocks.length === 0) {
+                    setFont('italic', 11 * fontScale, C_TXT_DOUX);
+                    doc.text('— RAS —', x + w / 2, yy + 6, { align: 'center' });
+                    return yy + 12;
+                }
+
+                blocks.forEach(block => {
+                    // Saut de page si nécessaire
+                    if (yy > CONTENT_BOTTOM - 18) {
+                        doc.addPage();
+                        dessinerHeader();
+                        yy = CONTENT_TOP;
+                    }
+
+                    // Label de bloc
+                    setFont('bold', 10 * fontScale, C_TXT_DOUX);
+                    doc.text(block.label, x, yy + 3.8);
+                    doc.setDrawColor(...C_BORDURE);
+                    doc.setLineWidth(0.3);
+                    doc.line(x, yy + 5.5, x + w, yy + 5.5);
+                    yy += 8.5;
+
+                    if (block.kind === 'agents') {
+                        block.items.forEach((a, idx) => {
+                            // Calcul lignes panne (wrap)
+                            setFont('normal', 11 * fontScale, C_TXT_DOUX);
+                            const panneLines = a.panne && a.panne !== '—'
+                                ? doc.splitTextToSize(a.panne, w - 8)
+                                : [];
+                            const panneH = panneLines.length * 5;
+                            const noteH = a.notes ? 6 : 0;
+                            const lineH = 7 + panneH + noteH + 2;
+
+                            if (yy + lineH > CONTENT_BOTTOM - 4) {
+                                doc.addPage();
+                                dessinerHeader();
+                                yy = CONTENT_TOP;
+                            }
+
+                            if (idx % 2 === 0) {
+                                fillRect(x, yy - 0.5, w, lineH, C_FOND_DOUX);
+                            }
+
+                            // Ligne 1 : NOM (gras, gauche) [+ badge 089] ─── HORAIRE (bleu, droite)
+                            setFont('bold', 12 * fontScale, C_TXT);
+                            doc.text(a.nom, x + 3, yy + 5);
+
+                            // Badge "089" en rouge juste après le nom
+                            if (a.prend089) {
+                                const nomEndX = x + 3 + doc.getTextWidth(a.nom) + 2;
+                                const badgeW = 11;
+                                const badgeH = 5;
+                                const badgeY = yy + 1.2;
+                                fillRect(nomEndX, badgeY, badgeW, badgeH, C_ROUGE);
+                                setFont('bold', 8 * fontScale, [255, 255, 255]);
+                                doc.text('089', nomEndX + badgeW / 2, badgeY + badgeH - 1.3, { align: 'center' });
+                            }
+
+                            setFont('bold', 11 * fontScale, C_BLEU);
+                            doc.text(a.horaire, x + w - 3, yy + 5, { align: 'right' });
+
+                            yy += 7;
+
+                            // Ligne 2 : panne (wrap pleine largeur, retrait)
+                            if (panneLines.length) {
+                                setFont('normal', 11 * fontScale, C_TXT_DOUX);
+                                panneLines.forEach((ln) => {
+                                    doc.text(ln, x + 6, yy + 3.5);
+                                    yy += 5;
+                                });
+                            }
+
+                            // Ligne 3 : notes éventuelles
+                            if (a.notes) {
+                                setFont('italic', 10 * fontScale, C_TXT);
+                                const noteLines = doc.splitTextToSize(a.notes, w - 10);
+                                doc.text(noteLines[0], x + 8, yy + 3.5);
+                                yy += 6;
+                            }
+
+                            yy += 2;
+                        });
+                        yy += 2;
+
+                    } else if (block.kind === 'text') {
+                        setFont('normal', 11 * fontScale, block.color || C_TXT);
+                        const lines = doc.splitTextToSize(block.text, w - 3);
+                        const lineH = 5 * fontScale;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (yy > CONTENT_BOTTOM - 5) {
+                                doc.addPage();
+                                dessinerHeader();
+                                yy = CONTENT_TOP;
+                            }
+                            doc.text(lines[i], x + 1.5, yy + 3.5);
+                            yy += lineH;
+                        }
+                        yy += 3;
+
+                    } else if (block.kind === 'flag') {
+                        fillRect(x, yy, w, 8, [253, 232, 235]);
+                        fillRect(x, yy, 2, 8, block.color);
+                        setFont('bold', 11 * fontScale, block.color);
+                        doc.text('! ' + block.label, x + 5, yy + 5.5);
+                        yy += 10;
+                    }
+                });
+
+                return yy;
+            }
+
+            // ─── Rendu page 1 : header + zones empilées ───
+            dessinerHeader();
+
+            // Pas de scaling auto : si ça déborde, on saute en page 2
+            const fontScale = 1.0;
+            let cursorY = CONTENT_TOP;
+
+            zones.forEach((zone) => {
+                // Saut de page si la zone risque d'être trop coupée (header + un peu de marge)
+                if (cursorY > CONTENT_BOTTOM - 30) {
+                    doc.addPage();
+                    dessinerHeader();
+                    cursorY = CONTENT_TOP;
+                }
+                cursorY = renderZoneBlock(zone, MARGIN, cursorY, COL_W, fontScale);
+                cursorY += ZONE_GAP;
+            });
+
+            // Footer sur toutes les pages
+            const pageTotal = doc.getNumberOfPages();
+            for (let p = 1; p <= pageTotal; p++) {
+                doc.setPage(p);
+                dessinerFooter(p, pageTotal);
+            }
+
+            const filename = `EntreQuarts_${types[currentTab].replace(/[^a-z0-9]/gi, '_')}_${now.toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            toast('PDF exporté', 'success');
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        }
+
+        // ========== HISTORIQUE ==========
+        const typesLabel = {
+            'soir-nuit': 'APRÈS-MIDI → NUIT',
+            'nuit-matin': 'NUIT → MATIN',
+            'matin-soir': 'MATIN → APRÈS-MIDI'
+        };
+
+        function ouvrirHistorique() {
+            document.getElementById('historique-preview').innerHTML = '';
+            renderHistorique();
+            document.getElementById('modal-historique').classList.add('open');
+        }
+
+        function fermerHistorique() {
+            document.getElementById('modal-historique').classList.remove('open');
+        }
+
+        function renderHistorique() {
+            const liste = document.getElementById('historique-liste');
+            const historique = lireHistorique();
+
+            if (historique.length === 0) {
+                liste.innerHTML = '<div class="historique-vide">Aucune passation enregistrée pour le moment.</div>';
+                return;
+            }
+
+            liste.innerHTML = historique.map(p => {
+                const d = new Date(p.date);
+                const dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+                return `
+                    <div class="historique-item">
+                        <div class="historique-info">
+                            <strong>${typesLabel[p.type] || p.type}</strong> — ${p.redacteur}
+                            <div class="historique-meta">${dateStr}</div>
+                        </div>
+                        <div class="historique-actions">
+                            <button class="btn-voir" onclick="voirPassation(${p.id})"><i data-lucide="eye"></i> Voir</button>
+                            <button class="btn-charger" onclick="chargerPassation(${p.id})"><i data-lucide="download"></i> Charger</button>
+                            <button class="btn-suppr" onclick="supprimerPassation(${p.id})"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            refreshIcons();
+        }
+
+        function voirPassation(id) {
+            const historique = lireHistorique();
+            const p = historique.find(x => x.id === id);
+            if (!p) return;
+
+            let texte = `=== ${typesLabel[p.type]} ===\n`;
+            texte += `Rédacteur : ${p.redacteur}\n`;
+            texte += `Date : ${new Date(p.date).toLocaleString('fr-FR')}\n\n`;
+
+            zones.forEach(zone => {
+                texte += `--- ${zone.toUpperCase()} ---\n`;
+                const zd = p.data[zone];
+                let vide = true;
+
+                if (zd.agents?.length) {
+                    vide = false;
+                    const label = p.type === 'soir-nuit' ? 'Agents dehors' : (p.type === 'matin-soir' ? 'Agents dehors' : 'Agents sortis');
+                    texte += `${label} :\n`;
+                    zd.agents.forEach(a => {
+                        let statut = a.statut;
+                        if (!statut || (statut !== 'heure' && statut !== 'en-cours' && statut !== 'retour')) {
+                            statut = a.heureFin ? 'heure' : 'en-cours';
+                        }
+                        let horaire;
+                        if (statut === 'heure' && a.heureFin) {
+                            horaire = `${a.heureDebut || '?'} → ${a.heureFin}`;
+                        } else if (statut === 'retour') {
+                            horaire = `${a.heureDebut || '?'} → sur le retour`;
+                        } else {
+                            horaire = `${a.heureDebut || '?'} → toujours en cours`;
+                        }
+                        const flag089 = (p.type === 'nuit-matin' && a.prend089) ? ' [089]' : '';
+                        texte += `  • ${a.nom || '?'}${flag089} | ${a.panne || '?'} | ${horaire}\n`;
+                        if (a.notes) texte += `    Notes : ${a.notes}\n`;
+                    });
+                }
+                if (zd.reports?.trim()) { vide = false; texte += `Reports CAD :\n${zd.reports}\n`; }
+                if (zd.chantiersNOK?.trim()) { vide = false; texte += `Chantiers NOK :\n${zd.chantiersNOK}\n`; }
+                if (zd.chantiersEnCours?.trim()) { vide = false; texte += `Chantiers en cours :\n${zd.chantiersEnCours}\n`; }
+                if (zd.libre?.trim()) { vide = false; texte += `Notes :\n${zd.libre}\n`; }
+                if (vide) texte += 'RAS\n';
+                texte += '\n';
+            });
+
+            document.getElementById('historique-preview').innerHTML = `
+                <h3 style="margin-top:20px;color:var(--enedis-bleu);">Aperçu</h3>
+                <div class="preview-content">${texte.replace(/</g, '&lt;')}</div>
+            `;
+        }
+
+        function chargerPassation(id) {
+            if (!confirm('Charger cette passation dans le formulaire ? Les données actuelles de l\'onglet seront remplacées.')) return;
+            const historique = lireHistorique();
+            const p = historique.find(x => x.id === id);
+            if (!p) return;
+
+            // On bascule sur le bon onglet et on injecte les données
+            currentTab = p.type;
+            data[p.type] = JSON.parse(JSON.stringify(p.data));
+            document.getElementById('redacteur').value = p.redacteur;
+            saveData();
+
+            // Mettre l'onglet visuellement actif
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.textContent.trim() === typesLabel[p.type]);
+            });
+
+            renderZones();
+            fermerHistorique();
+        }
+
+        function supprimerPassation(id) {
+            if (!confirm('Supprimer définitivement cette passation ?')) return;
+            let historique = lireHistorique();
+            historique = historique.filter(x => x.id !== id);
+            sauverHistorique(historique);
+            renderHistorique();
+            document.getElementById('historique-preview').innerHTML = '';
+        }
+
+        // Fermer la modale en cliquant en dehors
+        document.getElementById('modal-historique').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-historique') fermerHistorique();
+        });
+
+        // ========== COPIE TEAMS ==========
+        function copierZone(zone) {
+            const zd = data[currentTab][zone];
+            const now = new Date();
+            const dateStr = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0');
+
+            const titres = {
+                'soir-nuit': `PASSATION DU ${dateStr} - ${zone.toUpperCase()}`,
+                'nuit-matin': `PASSATION DU ${dateStr} - ${zone.toUpperCase()}`,
+                'matin-soir': `PASSATION DU ${dateStr} - ${zone.toUpperCase()}`
+            };
+
+            let texte = `${titres[currentTab]}\n`;
+
+            let vide = true;
+
+            // Agents
+            if (zd.agents?.length) {
+                vide = false;
+                const label = currentTab === 'nuit-matin'
+                    ? 'Agents sortis après 21h:'
+                    : (currentTab === 'matin-soir' ? 'Agents dehors:' : 'Agents sortis:');
+                texte += `${label}\n \n`;
+                zd.agents.forEach(a => {
+                    const nom = a.nom || '?';
+                    const panne = a.panne || '?';
+                    const debut = a.heureDebut || '?';
+                    let statut = a.statut;
+                    if (!statut || (statut !== 'heure' && statut !== 'en-cours' && statut !== 'retour')) {
+                        statut = a.heureFin ? 'heure' : 'en-cours';
+                    }
+                    let horaire;
+                    if (statut === 'heure' && a.heureFin) {
+                        horaire = `${debut} vers ${a.heureFin}`;
+                    } else if (statut === 'retour') {
+                        horaire = `${debut} → sur le retour`;
+                    } else {
+                        horaire = `${debut} → toujours en cours`;
+                    }
+                    const flag089 = (currentTab === 'nuit-matin' && a.prend089) ? ' [PREND SON 089]' : '';
+                    texte += ` - ${nom}${flag089} | ${panne} | ${horaire}`;
+                    if (a.notes) {
+                        texte += `\n ${a.notes}`;
+                    }
+                    texte += '\n \n';
+                });
+            }
+
+            // Reports CAD
+            if (currentTab === 'nuit-matin' && zd.reports?.trim()) {
+                vide = false;
+                texte += `Reports dépannage CAD:\n${zd.reports.trim()}\n \n`;
+            }
+
+            // Chantiers NOK (nuit-matin uniquement)
+            if (currentTab === 'nuit-matin' && zd.chantiersNOK?.trim()) {
+                vide = false;
+                texte += `Chantiers NOK:\n${zd.chantiersNOK.trim()}\n \n`;
+            }
+
+            // Chantiers en cours
+            if (currentTab === 'matin-soir' && zd.chantiersEnCours?.trim()) {
+                vide = false;
+                texte += `Chantiers en cours:\n${zd.chantiersEnCours.trim()}\n \n`;
+            }
+
+            // Notes libres
+            if (zd.libre?.trim()) {
+                vide = false;
+                texte += `Notes:\n${zd.libre.trim()}\n`;
+            }
+
+            if (vide) texte += '\nRAS\n';
+
+            // Copie + feedback visuel
+            navigator.clipboard.writeText(texte.trimEnd()).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✅ Copié !';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.classList.remove('copied');
+                }, 1800);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = texte.trimEnd();
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                toast('Copié dans le presse-papier', 'success');
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F9') {
+                e.preventDefault();
+                exporterPDF();
+            }
+        });
+
+        // Restaurer le mode sombre et les données
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+        }
+
+        const savedData = localStorage.getItem('passation_data');
+        if (savedData) {
+            try {
+                const loaded = JSON.parse(savedData);
+                const fresh = initData();
+                // Fusionner : on garde les données existantes, on initialise les zones manquantes
+                ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
+                    zones.forEach(z => {
+                        if (loaded[tab] && loaded[tab][z]) {
+                            // Zone existe : on complète les champs manquants
+                            data[tab][z] = Object.assign({}, fresh[tab][z], loaded[tab][z]);
+                        } else {
+                            // Zone manquante : on initialise proprement
+                            data[tab][z] = fresh[tab][z];
+                        }
+                    });
+                });
+            } catch(e) { data = initData(); }
+        }
+
+        appliquerConfig();
+        rafraichirDatalistSED();
+        renderZones();
+        refreshIcons();
+
+        // ════════════════════════════════════════════════════════
+        // ANIMATIONS — Ripple + Confetti + Spotlight tracking
+        // ════════════════════════════════════════════════════════
+
+        // --- Ripple effect global ---
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn || btn.disabled) return;
+            if (btn.classList.contains('config-tab') || btn.classList.contains('checklist-toggle')) return;
+            const rect = btn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 700);
+        });
+
+        // --- Spotlight tracking : suit la souris dans chaque .zone ---
+        document.addEventListener('mousemove', (e) => {
+            const zone = e.target.closest('.zone, .checklist-wrapper');
+            if (!zone) return;
+            const rect = zone.getBoundingClientRect();
+            zone.style.setProperty('--mx', (e.clientX - rect.left) + 'px');
+            zone.style.setProperty('--my', (e.clientY - rect.top) + 'px');
+        });
+
+        // --- Confetti burst ---
+        const CONFETTI_COLORS = ['#1f5aa8', '#3b7dd8', '#00a85a', '#f59100', '#dc3545', '#ffd166'];
+        function fireConfetti(host) {
+            if (!host) return;
+            host.classList.add('confetti-host');
+            const N = 32;
+            for (let i = 0; i < N; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'confetti-piece';
+                const angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                const dist = 80 + Math.random() * 120;
+                piece.style.setProperty('--cx', Math.cos(angle) * dist + 'px');
+                piece.style.setProperty('--cy', Math.sin(angle) * dist + 'px');
+                piece.style.setProperty('--cr', (Math.random() * 720 - 360) + 'deg');
+                piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+                piece.style.animationDelay = (Math.random() * 100) + 'ms';
+                if (Math.random() > 0.5) piece.style.borderRadius = '50%';
+                host.appendChild(piece);
+                setTimeout(() => piece.remove(), 1300);
+            }
+        }
+    </script>
+</body>
+</html>
