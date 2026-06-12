@@ -3,7 +3,6 @@ const CACHE_NAME = 'entre-quarts-v1';
 const APP_SHELL = [
     './',
     './index.html',
-    './Entre Quarts.html',
     './manifest.webmanifest',
     'https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
