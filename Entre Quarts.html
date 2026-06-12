@@ -2973,6 +2973,20 @@
                 return;
             }
 
+            // Enregistre la passation dans l'historique avant l'export
+            const passation = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                type: currentTab,
+                redacteur: redacteur,
+                data: data[currentTab]
+            };
+            let historique = lireHistorique();
+            historique.unshift(passation);
+            historique = historique.slice(0, 50);
+            sauverHistorique(historique);
+            saveData();
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
@@ -3279,7 +3293,7 @@
 
             const filename = `EntreQuarts_${types[currentTab].replace(/[^a-z0-9]/gi, '_')}_${now.toISOString().split('T')[0]}.pdf`;
             doc.save(filename);
-            toast('PDF exporté', 'success');
+            toast('PDF exporté et passation enregistrée', 'success');
         }
 
         function toggleDarkMode() {
