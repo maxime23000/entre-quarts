@@ -2942,28 +2942,47 @@
             }
         }
 
+        // Enregistre la passation en remplaçant une éventuelle entrée récente
+        // du même cycle (currentTab) et même rédacteur (< 16h)
+        // pour éviter d'accumuler 5 sauvegardes d'un même quart de nuit.
+        function enregistrerPassation(redacteur) {
+            const maintenant = Date.now();
+            const SEUIL_FUSION_MS = 16 * 60 * 60 * 1000;
+            const passation = {
+                id: maintenant,
+                date: new Date(maintenant).toISOString(),
+                type: currentTab,
+                redacteur: redacteur,
+                data: data[currentTab]
+            };
+            let historique = lireHistorique();
+            const idxExistant = historique.findIndex(p =>
+                p.type === currentTab &&
+                p.redacteur === redacteur &&
+                (maintenant - p.id) < SEUIL_FUSION_MS
+            );
+            let remplacee = false;
+            if (idxExistant !== -1) {
+                // On garde l'id d'origine pour ne pas casser l'ordre, on met juste à jour le contenu
+                passation.id = historique[idxExistant].id;
+                historique.splice(idxExistant, 1);
+                remplacee = true;
+            }
+            historique.unshift(passation);
+            historique = historique.slice(0, 50);
+            sauverHistorique(historique);
+            saveData();
+            return remplacee;
+        }
+
         function sauvegarder() {
             const redacteur = document.getElementById('redacteur').value.trim();
             if (!redacteur) {
                 toast('Nom du rédacteur requis', 'error');
                 return;
             }
-            
-            const passation = {
-                id: Date.now(),
-                date: new Date().toISOString(),
-                type: currentTab,
-                redacteur: redacteur,
-                data: data[currentTab]
-            };
-
-            let historique = lireHistorique();
-            historique.unshift(passation);
-            historique = historique.slice(0, 50);
-            sauverHistorique(historique);
-            
-            saveData();
-            toast('Passation enregistrée', 'success');
+            const remplacee = enregistrerPassation(redacteur);
+            toast(remplacee ? 'Passation mise à jour' : 'Passation enregistrée', 'success');
         }
 
         function exporterPDF() {
@@ -2974,18 +2993,7 @@
             }
 
             // Enregistre la passation dans l'historique avant l'export
-            const passation = {
-                id: Date.now(),
-                date: new Date().toISOString(),
-                type: currentTab,
-                redacteur: redacteur,
-                data: data[currentTab]
-            };
-            let historique = lireHistorique();
-            historique.unshift(passation);
-            historique = historique.slice(0, 50);
-            sauverHistorique(historique);
-            saveData();
+            enregistrerPassation(redacteur);
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
