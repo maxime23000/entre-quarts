@@ -4006,7 +4006,8 @@
         function reprendreCyclePrecedent() {
             const precedent = CYCLE_PRECEDENT[currentTab];
             if (!precedent) { toast('Aucun cycle précédent défini', 'error'); return; }
-            const historique = lireHistorique();
+            // Force le tri descendant (plus récent d'abord) pour blinder contre un historique mal ordonné
+            const historique = lireHistorique().slice().sort((a, b) => (b.id || 0) - (a.id || 0));
             // Chercher la passation la plus récente du type précédent
             const candidate = historique.find(p => p.type === precedent);
             if (!candidate) {
