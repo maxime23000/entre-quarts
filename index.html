@@ -7,6 +7,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1423DC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Entre Quarts">
     <style>
         * {
             margin: 0;
@@ -1917,6 +1922,230 @@
             animation-duration: 0.45s;
         }
 
+        /* ════════════════════════════════════════════════════════
+           PHASE 2 — Nouveaux composants
+           ════════════════════════════════════════════════════════ */
+
+        /* Indicateur de sauvegarde dans le header */
+        .save-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.85);
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            min-width: 130px;
+        }
+        .save-indicator .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--enedis-vert);
+            flex-shrink: 0;
+        }
+        .save-indicator.saving .dot { background: var(--enedis-jaune); animation: pulse 1s infinite; }
+        .save-indicator.error .dot { background: var(--enedis-rouge-vif); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Compte à rebours fin de quart */
+        .countdown {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.92);
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+        }
+        .countdown.urgent {
+            background: rgba(235,110,60,0.30);
+            border-color: rgba(235,110,60,0.5);
+        }
+        .countdown.overdue {
+            background: rgba(220,53,69,0.30);
+            border-color: rgba(220,53,69,0.5);
+        }
+        .countdown [data-lucide] { width: 13px; height: 13px; }
+
+        /* Sticky-note du quart par zone — pense-bête perso non exporté */
+        .sticky-note {
+            margin: 8px -18px 14px -18px;
+            padding: 10px 18px;
+            background: linear-gradient(180deg, #fffbe8 0%, #fff7d4 100%);
+            border-top: 1px solid #f0d97a;
+            border-bottom: 1px solid #f0d97a;
+            border-left: 4px solid #f0c44d;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .sticky-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sticky-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #b08a18;
+            opacity: 0.85;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sticky-label::before {
+            content: '🔒';
+            font-size: 9px;
+        }
+        body.dark .sticky-label { color: #f0c850; }
+        body.dark .sticky-note {
+            background: linear-gradient(180deg, #3a3318 0%, #2d2812 100%);
+            border-color: #6b5c20;
+            color: #f0e0a0;
+        }
+        .sticky-note [data-lucide] {
+            width: 16px; height: 16px;
+            stroke: #b08a18;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        body.dark .sticky-note [data-lucide] { stroke: #f0c850; }
+        .sticky-note textarea {
+            background: transparent;
+            border: none;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            color: #6b5500;
+            min-height: 22px;
+            resize: vertical;
+            outline: none;
+            padding: 0;
+            width: 100%;
+        }
+        body.dark .sticky-note textarea { color: #f0e0a0; }
+        .sticky-note textarea::placeholder {
+            color: #b08a18;
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        /* Durée d'intervention live */
+        .col-duree {
+            grid-area: duree;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--enedis-gris);
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .col-duree.warn { color: var(--enedis-orange); }
+        .col-duree.alert { color: var(--enedis-rouge-vif); }
+        .col-duree [data-lucide] {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Agent row : zone duree dans la grille */
+        .agent-row {
+            grid-template-areas:
+                "nom panne debut fin suppr"
+                "extra extra duree duree duree"
+                "notes notes notes notes notes" !important;
+        }
+        .agent-row .notes-wrap {
+            grid-area: notes;
+            position: relative;
+            display: flex;
+            gap: 6px;
+            align-items: flex-start;
+        }
+        .agent-row .notes-wrap textarea { flex: 1; }
+
+        /* Bouton micro pour dictée */
+        .btn-mic {
+            background: #fff;
+            border: 1.5px solid var(--enedis-gris-bord);
+            color: var(--enedis-bleu);
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.15s var(--ease-out-soft);
+        }
+        .btn-mic:hover {
+            background: rgba(20,35,220,0.08);
+            border-color: var(--enedis-bleu);
+        }
+        .btn-mic.listening {
+            background: var(--enedis-rouge-vif);
+            border-color: var(--enedis-rouge-vif);
+            color: white;
+            animation: pulse 1.4s infinite;
+        }
+        body.dark .btn-mic {
+            background: #2a2a2a;
+            border-color: #555;
+            color: #6c8cff;
+        }
+
+        /* Bouton reprendre passation entrante */
+        .btn-reprendre {
+            background: linear-gradient(135deg, var(--enedis-turquoise) 0%, var(--enedis-vert) 100%);
+            color: white;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .btn-reprendre:hover { opacity: 0.92; }
+
+        /* Recherche dans historique */
+        .historique-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            background: var(--enedis-gris-clair);
+            border-radius: 8px;
+        }
+        body.dark .historique-search { background: #1a2050; }
+        .historique-search input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            outline: none;
+            padding: 4px 0;
+        }
+        body.dark .historique-search input { color: #e0e0e0; }
+        .historique-search [data-lucide] {
+            stroke: var(--enedis-gris);
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Toggle dictée actif sur textarea */
+        textarea.dictating {
+            border-color: var(--enedis-rouge-vif) !important;
+            box-shadow: 0 0 0 3px rgba(220,53,69,0.18) !important;
+        }
+
         /* ──────── Reduced motion ──────── */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
@@ -1952,11 +2181,17 @@
                 <div class="title" id="app-title">Entre Quarts</div>
             </div>
             <div class="header-buttons">
-                <span id="sync-status" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;min-width:110px;text-align:right;"></span>
+                <span id="sync-status" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;min-width:60px;text-align:right;"></span>
+                <span id="save-indicator" class="save-indicator" title="État de la sauvegarde locale">
+                    <span class="dot"></span><span class="txt">En attente</span>
+                </span>
+                <span id="countdown" class="countdown" title="Heure de relève">
+                    <i data-lucide="clock"></i><span class="txt">…</span>
+                </span>
                 <button class="btn-mode" onclick="toggleDarkMode()"><i data-lucide="moon"></i> Mode</button>
                 <button class="btn-config" onclick="ouvrirConfig()"><i data-lucide="settings"></i> Paramètres</button>
-                <button class="btn-nouveau" onclick="nouveau()"><i data-lucide="file-plus"></i> Nouveau</button>
                 <button class="btn-historique" onclick="ouvrirHistorique()"><i data-lucide="history"></i> Historique</button>
+                <button class="btn-nouveau" onclick="nouveau()"><i data-lucide="file-plus"></i> Nouveau</button>
                 <button class="btn-save" onclick="sauvegarder()"><i data-lucide="save"></i> Enregistrer</button>
                 <button class="btn-export" onclick="exporterPDF()"><i data-lucide="file-down"></i> Export PDF</button>
             </div>
@@ -1971,9 +2206,9 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('soir-nuit')">APRÈS-MIDI → NUIT</button>
-            <button class="tab" onclick="switchTab('nuit-matin')">NUIT → MATIN</button>
-            <button class="tab" onclick="switchTab('matin-soir')">MATIN → APRÈS-MIDI</button>
+            <button class="tab active" data-tab="soir-nuit" onclick="switchTab(event, 'soir-nuit')">APRÈS-MIDI → NUIT</button>
+            <button class="tab" data-tab="nuit-matin" onclick="switchTab(event, 'nuit-matin')">NUIT → MATIN</button>
+            <button class="tab" data-tab="matin-soir" onclick="switchTab(event, 'matin-soir')">MATIN → APRÈS-MIDI</button>
         </div>
 
         <div id="zones-container"></div>
@@ -1989,6 +2224,11 @@
             <div class="modal-header">
                 <h2><i data-lucide="history"></i> Historique des passations</h2>
                 <button class="btn-close" onclick="fermerHistorique()"><i data-lucide="x"></i> Fermer</button>
+            </div>
+            <div class="historique-search">
+                <i data-lucide="search"></i>
+                <input type="text" id="historique-search-input" placeholder="Rechercher (agent, BI-INC, date, …)"
+                       oninput="filtrerHistorique()" autocomplete="off">
             </div>
             <div id="historique-liste"></div>
             <div id="historique-preview"></div>
@@ -2056,12 +2296,66 @@
             </div>
         </div>
     </div>
-    <!-- Container toasts -->
+    <!-- Datalists globales pour autocomplétion -->
+    <datalist id="pannes-recentes"></datalist>
+
+<!-- Container toasts -->
     <div class="toast-container" id="toast-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
     <script>
+        // ========== HELPERS GLOBAUX ==========
+        // Échappement HTML pour empêcher l'injection XSS via innerHTML
+        function esc(s) {
+            return String(s ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        // Version du schéma de données — incrémenter à chaque changement
+        const DATA_SCHEMA_VERSION = 2;
+
+        // Migration douce localStorage : fait évoluer la structure sans casser l'existant
+        function migrateData(loaded) {
+            if (!loaded || typeof loaded !== 'object') return null;
+            const version = loaded.__version || 1;
+            if (version >= DATA_SCHEMA_VERSION) return loaded;
+            // v1 → v2 : ajoute le champ stickyNote vide à chaque zone, lastShiftLoad
+            if (version < 2) {
+                ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
+                    if (!loaded[tab]) return;
+                    Object.keys(loaded[tab]).forEach(z => {
+                        if (loaded[tab][z] && typeof loaded[tab][z].stickyNote === 'undefined') {
+                            loaded[tab][z].stickyNote = '';
+                        }
+                    });
+                });
+            }
+            loaded.__version = DATA_SCHEMA_VERSION;
+            return loaded;
+        }
+
+        // Horaires de fin de quart (heure locale, {h, m})
+        // soir-nuit  = quart après-midi qui se termine à 21h00 (début nuit)
+        // nuit-matin = quart nuit qui se termine à 05h30 (début matin)
+        // matin-soir = quart matin qui se termine à 12h30 (début après-midi)
+        const SHIFT_END = {
+            'soir-nuit': { h: 21, m: 0 },
+            'nuit-matin': { h: 5,  m: 30 },
+            'matin-soir': { h: 12, m: 30 }
+        };
+
+        // Ordre des cycles pour "reprendre la passation entrante"
+        const CYCLE_PRECEDENT = {
+            'soir-nuit': 'matin-soir',   // l'après-midi reprend la passation du matin
+            'nuit-matin': 'soir-nuit',   // la nuit reprend la passation de l'après-midi
+            'matin-soir': 'nuit-matin'   // le matin reprend la passation de nuit
+        };
+
         // ========== COUCHE DE STOCKAGE JSONBIN ==========
         const jsonBinStore = {
             BIN_ID: '6a0afcef502d785a1b733327',
@@ -2190,6 +2484,14 @@
                         cfg.checklists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.checklists));
                         cfg.checklists['nuit-matin'].items = oldItems;
                         delete cfg.checklist;
+                    }
+                    // Migration ponctuelle 2026-06-12 : ajout "Vérif Incident LEIA" dans nuit-matin
+                    const nm = cfg.checklists['nuit-matin'];
+                    if (nm && Array.isArray(nm.items)
+                        && nm.items.includes('Controles Aval LEIA')
+                        && !nm.items.includes('Vérif Incident LEIA')) {
+                        const idx = nm.items.indexOf('Controles Aval LEIA');
+                        nm.items.splice(idx + 1, 0, 'Vérif Incident LEIA');
                     }
                     return cfg;
                 } catch(e) { return null; }
@@ -2565,22 +2867,27 @@
                 'matin-soir': {}
             };
             zonesLocal.forEach(z => {
-                result['soir-nuit'][z] = { agents: [], libre: '' };
-                result['nuit-matin'][z] = { agents: [], reports: '', chantiersNOK: '', libre: '', amtiAppele: false };
-                result['matin-soir'][z] = { agents: [], chantiersEnCours: '', libre: '' };
+                result['soir-nuit'][z] = { agents: [], libre: '', stickyNote: '' };
+                result['nuit-matin'][z] = { agents: [], reports: '', chantiersNOK: '', libre: '', amtiAppele: false, stickyNote: '' };
+                result['matin-soir'][z] = { agents: [], chantiersEnCours: '', libre: '', stickyNote: '' };
             });
+            result.__version = DATA_SCHEMA_VERSION;
             return result;
         }
 
         function saveData() {
+            data.__version = DATA_SCHEMA_VERSION;
             localStorage.setItem('passation_data', JSON.stringify(data));
+            marquerSauvegarde();
         }
 
-        function switchTab(tab) {
+        function switchTab(evt, tab) {
             currentTab = tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
             renderZones();
+            majCompteARebours();
         }
 
         // Mappage zone → libellé secondaire (n° département / type d'astreinte)
@@ -2605,6 +2912,14 @@
             const container = document.getElementById('zones-container');
             container.innerHTML = '';
 
+            // Bandeau "Reprendre passation entrante"
+            const banniere = document.createElement('div');
+            banniere.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:10px;';
+            banniere.innerHTML = `<button class="btn-reprendre" onclick="reprendreCyclePrecedent()" title="Importer les agents toujours en cours du quart précédent">
+                <i data-lucide="rotate-cw"></i> Reprendre passation entrante (${esc(typesLabel[CYCLE_PRECEDENT[currentTab]] || '')})
+            </button>`;
+            container.appendChild(banniere);
+
             const cl = config.checklists?.[currentTab];
             if (cl && cl.items && cl.items.length > 0) {
                 const checklistEl = renderChecklist();
@@ -2627,23 +2942,35 @@
                     `;
                 }
 
+                const stickyVal = data[currentTab][zone]?.stickyNote || '';
                 zoneDiv.innerHTML = `
                     <div class="zone-title">
                         <div class="zone-title-text">
-                            <span>${zone}</span>
-                            ${departementLabel(zone) ? `<span class="zone-title-sub">${departementLabel(zone)}</span>` : ''}
+                            <span>${esc(zone)}</span>
+                            ${departementLabel(zone) ? `<span class="zone-title-sub">${esc(departementLabel(zone))}</span>` : ''}
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;">
                             ${amtiHtml}
-                            <button class="btn-copy" onclick="copierZone('${zone}')"><i data-lucide="copy"></i> Copier pour Teams</button>
+                            <button class="btn-copy" onclick="copierZone('${esc(zone)}')"><i data-lucide="copy"></i> Copier pour Teams</button>
                         </div>
                     </div>
-                    <div id="zone-${zone}"></div>
+                    <div class="sticky-note">
+                        <i data-lucide="sticky-note"></i>
+                        <div class="sticky-content">
+                            <div class="sticky-label">Pense-bête perso — non transmis, non exporté</div>
+                            <textarea placeholder="Note personnelle (rappel rapide, agent en astreinte, …)"
+                                      oninput="updateStickyNote('${esc(zone)}', this.value)">${esc(stickyVal)}</textarea>
+                        </div>
+                    </div>
+                    <datalist id="agents-favoris-${esc(zone)}"></datalist>
+                    <div id="zone-${esc(zone)}"></div>
                 `;
                 container.appendChild(zoneDiv);
                 renderZoneContent(zone);
             });
             refreshIcons();
+            rafraichirDatalistPannes();
+            rafraichirDatalistAgents();
         }
 
         // ========== CHECKLIST PRISE DE POSTE ==========
@@ -2669,7 +2996,7 @@
                 <div class="checklist-header" onclick="toggleChecklist()">
                     <h3>
                         <i data-lucide="clipboard-check"></i>
-                        ${cl.titre || 'Checklist'}
+                        ${esc(cl.titre || 'Checklist')}
                         <span class="checklist-counter ${allDone ? 'all-done' : ''}">${doneCount}/${items.length}</span>
                     </h3>
                     <span class="checklist-toggle"><i data-lucide="${collapsed ? 'chevron-down' : 'chevron-up'}"></i></span>
@@ -2680,7 +3007,7 @@
                         return `
                             <div class="check-item ${done ? 'checked' : ''}" onclick="toggleCheck(${i})">
                                 <div class="check-dot ${done ? 'done' : ''}">${checkSvgInline}</div>
-                                <span class="check-label">${item}</span>
+                                <span class="check-label">${esc(item)}</span>
                             </div>
                         `;
                     }).join('')}
@@ -2884,19 +3211,31 @@
                     </div>
                 ` : '';
 
+                // Durée d'intervention live + badge >4h
+                const dureeHtml = renderDureeIntervention(agent, statut);
+
                 return `
-                    <div class="agent-row">
-                        <input class="col-nom" type="text" placeholder="Agent/Équipe" value="${agent.nom || ''}"
-                               oninput="updateAgent('${zone}', ${i}, 'nom', this.value)">
-                        <input class="col-panne" type="text" placeholder="Panne (BI-INC-... | DESCRIPTION)" value="${agent.panne || ''}"
-                               oninput="updateAgent('${zone}', ${i}, 'panne', this.value)">
-                        <input class="col-debut" type="time" value="${agent.heureDebut || ''}"
-                               onchange="updateAgent('${zone}', ${i}, 'heureDebut', this.value)">
+                    <div class="agent-row" data-agent-debut="${esc(agent.heureDebut || '')}" data-agent-statut="${esc(statut)}">
+                        <input class="col-nom" type="text" placeholder="Agent/Équipe" value="${esc(agent.nom)}"
+                               list="agents-favoris-${esc(zone)}"
+                               oninput="updateAgent('${esc(zone)}', ${i}, 'nom', this.value)">
+                        <input class="col-panne" type="text" placeholder="Panne (BI-INC-... | DESCRIPTION)" value="${esc(agent.panne)}"
+                               list="pannes-recentes"
+                               oninput="updateAgent('${esc(zone)}', ${i}, 'panne', this.value)">
+                        <input class="col-debut" type="time" value="${esc(agent.heureDebut)}"
+                               onchange="updateAgent('${esc(zone)}', ${i}, 'heureDebut', this.value)">
                         ${colFinHtml}
-                        <button class="btn-delete col-suppr" onclick="deleteAgent('${zone}', ${i})"><i data-lucide="trash-2"></i></button>
+                        <button class="btn-delete col-suppr" onclick="deleteAgent('${esc(zone)}', ${i})" title="Supprimer cet agent"><i data-lucide="trash-2"></i></button>
                         ${extraHtml}
-                        <textarea class="notes-field col-notes" placeholder="Notes (description longue, observations, contexte...)"
-                                  oninput="updateAgent('${zone}', ${i}, 'notes', this.value)">${agent.notes || ''}</textarea>
+                        ${dureeHtml}
+                        <div class="col-notes notes-wrap">
+                            <textarea class="notes-field" placeholder="Notes (description longue, observations, contexte...)"
+                                      oninput="updateAgent('${esc(zone)}', ${i}, 'notes', this.value)">${esc(agent.notes)}</textarea>
+                            <button type="button" class="btn-mic" title="Dicter les notes"
+                                    onclick="dicterNotes(this, '${esc(zone)}', ${i})">
+                                <i data-lucide="mic"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -3339,10 +3678,10 @@
                 const d = new Date(p.date);
                 const dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
                 return `
-                    <div class="historique-item">
+                    <div class="historique-item" data-search="${esc((typesLabel[p.type] || p.type) + ' ' + p.redacteur + ' ' + dateStr + ' ' + extraireSearchableText(p)).toLowerCase()}">
                         <div class="historique-info">
-                            <strong>${typesLabel[p.type] || p.type}</strong> — ${p.redacteur}
-                            <div class="historique-meta">${dateStr}</div>
+                            <strong>${esc(typesLabel[p.type] || p.type)}</strong> — ${esc(p.redacteur)}
+                            <div class="historique-meta">${esc(dateStr)}</div>
                         </div>
                         <div class="historique-actions">
                             <button class="btn-voir" onclick="voirPassation(${p.id})"><i data-lucide="eye"></i> Voir</button>
@@ -3353,6 +3692,26 @@
                 `;
             }).join('');
             refreshIcons();
+        }
+
+        // Extrait un texte cherchable depuis une passation (agents, pannes, notes)
+        function extraireSearchableText(p) {
+            const parts = [];
+            try {
+                Object.values(p.data || {}).forEach(zd => {
+                    if (zd.agents) zd.agents.forEach(a => {
+                        if (a.nom) parts.push(a.nom);
+                        if (a.panne) parts.push(a.panne);
+                        if (a.notes) parts.push(a.notes);
+                    });
+                    if (zd.reports) parts.push(zd.reports);
+                    if (zd.chantiersNOK) parts.push(zd.chantiersNOK);
+                    if (zd.chantiersEnCours) parts.push(zd.chantiersEnCours);
+                    if (zd.libre) parts.push(zd.libre);
+                    if (zd.stickyNote) parts.push(zd.stickyNote);
+                });
+            } catch(e) {}
+            return parts.join(' ');
         }
 
         function voirPassation(id) {
@@ -3401,7 +3760,7 @@
 
             document.getElementById('historique-preview').innerHTML = `
                 <h3 style="margin-top:20px;color:var(--enedis-bleu);">Aperçu</h3>
-                <div class="preview-content">${texte.replace(/</g, '&lt;')}</div>
+                <div class="preview-content">${esc(texte)}</div>
             `;
         }
 
@@ -3417,9 +3776,9 @@
             document.getElementById('redacteur').value = p.redacteur;
             saveData();
 
-            // Mettre l'onglet visuellement actif
+            // Mettre l'onglet visuellement actif via data-tab (robuste au changement de libellé)
             document.querySelectorAll('.tab').forEach(t => {
-                t.classList.toggle('active', t.textContent.trim() === typesLabel[p.type]);
+                t.classList.toggle('active', t.dataset.tab === p.type);
             });
 
             renderZones();
@@ -3542,6 +3901,249 @@
             }
         });
 
+        // ════════════════════════════════════════════════════════
+        // PHASE 2 — Helpers UI (durée, compte à rebours, sauvegarde, etc.)
+        // ════════════════════════════════════════════════════════
+
+        // ─── Indicateur sauvegarde ───
+        let lastSaveTs = 0;
+        function marquerSauvegarde() {
+            lastSaveTs = Date.now();
+            const el = document.getElementById('save-indicator');
+            if (!el) return;
+            el.classList.remove('saving', 'error');
+            el.querySelector('.txt').textContent = 'Sauvegardé';
+        }
+        function tickSaveIndicator() {
+            const el = document.getElementById('save-indicator');
+            if (!el || !lastSaveTs) return;
+            const sec = Math.floor((Date.now() - lastSaveTs) / 1000);
+            let txt;
+            if (sec < 5) txt = 'Sauvegardé';
+            else if (sec < 60) txt = `Sauvegardé il y a ${sec}s`;
+            else if (sec < 3600) txt = `Sauvegardé il y a ${Math.floor(sec/60)} min`;
+            else txt = `Sauvegardé il y a +${Math.floor(sec/3600)}h`;
+            el.querySelector('.txt').textContent = txt;
+        }
+
+        // ─── Compte à rebours fin de quart ───
+        function majCompteARebours() {
+            const el = document.getElementById('countdown');
+            if (!el) return;
+            const fin = SHIFT_END[currentTab];
+            if (!fin) { el.style.display = 'none'; return; }
+            el.style.display = 'inline-flex';
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(fin.h, fin.m, 0, 0);
+            if (target.getTime() <= now.getTime()) {
+                // L'heure de fin est déjà passée aujourd'hui → demain
+                target.setDate(target.getDate() + 1);
+            }
+            const diffMs = target.getTime() - now.getTime();
+            const totalMin = Math.floor(diffMs / 60000);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            const txt = h > 0 ? `${h}h ${String(m).padStart(2,'0')} avant relève` : `${m} min avant relève`;
+            el.querySelector('.txt').textContent = txt;
+            el.classList.toggle('urgent', totalMin <= 60 && totalMin > 15);
+            el.classList.toggle('overdue', totalMin <= 15);
+        }
+
+        // ─── Durée d'intervention live ───
+        function renderDureeIntervention(agent, statut) {
+            if (!agent.heureDebut || statut !== 'en-cours') return '<div class="col-duree"></div>';
+            const [hh, mm] = agent.heureDebut.split(':').map(Number);
+            if (isNaN(hh) || isNaN(mm)) return '<div class="col-duree"></div>';
+            const now = new Date();
+            const debut = new Date(now);
+            debut.setHours(hh, mm, 0, 0);
+            // Si l'heure de début est dans le futur, c'est qu'on est passé minuit
+            if (debut.getTime() > now.getTime()) debut.setDate(debut.getDate() - 1);
+            const diffMin = Math.floor((now.getTime() - debut.getTime()) / 60000);
+            if (diffMin < 0) return '<div class="col-duree"></div>';
+            const h = Math.floor(diffMin / 60);
+            const m = diffMin % 60;
+            const txt = h > 0 ? `${h}h${String(m).padStart(2,'0')} sur intervention` : `${m} min sur intervention`;
+            let cls = '';
+            if (diffMin >= 240) cls = 'alert';      // >= 4h
+            else if (diffMin >= 180) cls = 'warn';  // >= 3h
+            return `<div class="col-duree ${cls}"><i data-lucide="clock"></i> ${esc(txt)}</div>`;
+        }
+
+        // Tick principal : compte à rebours + sauvegardé + durées
+        function tickGlobal() {
+            tickSaveIndicator();
+            majCompteARebours();
+            // Re-render léger des durées : sans innerHTML, on remplace juste les col-duree
+            document.querySelectorAll('#zones-container .agent-row').forEach(row => {
+                const debut = row.dataset.agentDebut;
+                const statut = row.dataset.agentStatut;
+                const dureeEl = row.querySelector('.col-duree');
+                if (!dureeEl || !debut || statut !== 'en-cours') return;
+                const fake = { heureDebut: debut };
+                const html = renderDureeIntervention(fake, statut);
+                // Extraire le contenu et la classe sans recréer l'élément
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const newEl = tmp.firstElementChild;
+                if (newEl) {
+                    dureeEl.className = newEl.className;
+                    dureeEl.innerHTML = newEl.innerHTML;
+                }
+            });
+            refreshIcons();
+        }
+
+        // ─── Sticky-note du quart ───
+        function updateStickyNote(zone, value) {
+            if (!data[currentTab][zone]) return;
+            data[currentTab][zone].stickyNote = value;
+            saveData();
+        }
+
+        // ─── Reprise du cycle précédent ───
+        function reprendreCyclePrecedent() {
+            const precedent = CYCLE_PRECEDENT[currentTab];
+            if (!precedent) { toast('Aucun cycle précédent défini', 'error'); return; }
+            const historique = lireHistorique();
+            // Chercher la passation la plus récente du type précédent
+            const candidate = historique.find(p => p.type === precedent);
+            if (!candidate) {
+                toast(`Aucune passation ${typesLabel[precedent]} trouvée`, 'info');
+                return;
+            }
+            const dateStr = new Date(candidate.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            if (!confirm(`Reprendre la passation ${typesLabel[precedent]} du ${dateStr} (par ${candidate.redacteur}) ?\n\nLes données actuelles du quart ${typesLabel[currentTab]} seront remplacées par celles-ci.`)) return;
+            // Copie profonde des données du cycle précédent vers le cycle courant
+            const copie = JSON.parse(JSON.stringify(candidate.data));
+            // On nettoie les champs qui ne devraient PAS être repris : reports, chantiersNOK
+            // mais on garde les agents (toujours en cours), notes générales
+            Object.keys(copie).forEach(z => {
+                if (copie[z]) {
+                    delete copie[z].reports;
+                    delete copie[z].chantiersNOK;
+                    delete copie[z].amtiAppele;
+                    // Filtrer les agents : on ne garde que ceux dont le statut n'est pas 'heure' (donc en cours / retour)
+                    if (Array.isArray(copie[z].agents)) {
+                        copie[z].agents = copie[z].agents.filter(a => {
+                            const st = a.statut || (a.heureFin ? 'heure' : 'en-cours');
+                            return st !== 'heure';
+                        });
+                    }
+                }
+            });
+            data[currentTab] = Object.assign({}, data[currentTab], copie);
+            saveData();
+            renderZones();
+            toast(`Passation entrante chargée (${candidate.agents?.length || 0} agents repris)`, 'success');
+        }
+
+        // ─── Auto-complétion BI-INC depuis l'historique 30 derniers jours ───
+        function rafraichirDatalistPannes() {
+            const dl = document.getElementById('pannes-recentes');
+            if (!dl) return;
+            const historique = lireHistorique();
+            const seuilMs = 30 * 24 * 60 * 60 * 1000;
+            const maintenant = Date.now();
+            const pannes = new Set();
+            historique.forEach(p => {
+                if ((maintenant - p.id) > seuilMs) return;
+                Object.values(p.data || {}).forEach(zd => {
+                    (zd.agents || []).forEach(a => {
+                        if (a.panne && a.panne.trim()) pannes.add(a.panne.trim());
+                    });
+                });
+            });
+            dl.innerHTML = [...pannes].sort().map(p => `<option value="${esc(p)}">`).join('');
+        }
+
+        // ─── Favoris agents : top noms récurrents par zone ───
+        function rafraichirDatalistAgents() {
+            const historique = lireHistorique();
+            const seuilMs = 90 * 24 * 60 * 60 * 1000;
+            const maintenant = Date.now();
+            zones.forEach(z => {
+                const dl = document.getElementById(`agents-favoris-${z}`);
+                if (!dl) return;
+                const compteur = {};
+                historique.forEach(p => {
+                    if ((maintenant - p.id) > seuilMs) return;
+                    const zd = (p.data || {})[z];
+                    if (!zd || !zd.agents) return;
+                    zd.agents.forEach(a => {
+                        if (a.nom && a.nom.trim()) {
+                            compteur[a.nom.trim()] = (compteur[a.nom.trim()] || 0) + 1;
+                        }
+                    });
+                });
+                const top = Object.entries(compteur).sort((a,b) => b[1] - a[1]).slice(0, 15).map(([nom]) => nom);
+                dl.innerHTML = top.map(n => `<option value="${esc(n)}">`).join('');
+            });
+        }
+
+        // ─── Dictée vocale Web Speech API ───
+        let currentRecognition = null;
+        function dicterNotes(btnEl, zone, idx) {
+            // Si déjà en cours sur ce bouton, on arrête
+            if (currentRecognition) {
+                try { currentRecognition.stop(); } catch(e) {}
+                currentRecognition = null;
+                document.querySelectorAll('.btn-mic.listening').forEach(b => b.classList.remove('listening'));
+                document.querySelectorAll('textarea.dictating').forEach(t => t.classList.remove('dictating'));
+                return;
+            }
+            const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Recog) {
+                toast('Dictée vocale non supportée sur ce navigateur', 'error');
+                return;
+            }
+            const textarea = btnEl.parentElement.querySelector('textarea');
+            if (!textarea) return;
+            const recognition = new Recog();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            const baseValue = textarea.value;
+            let finalChunk = '';
+            recognition.onresult = (e) => {
+                let interim = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    const transcript = e.results[i][0].transcript;
+                    if (e.results[i].isFinal) finalChunk += transcript;
+                    else interim += transcript;
+                }
+                textarea.value = (baseValue + (baseValue ? ' ' : '') + finalChunk + interim).trim();
+            };
+            recognition.onerror = (e) => {
+                toast('Erreur dictée : ' + e.error, 'error');
+            };
+            recognition.onend = () => {
+                btnEl.classList.remove('listening');
+                textarea.classList.remove('dictating');
+                if (currentRecognition === recognition) currentRecognition = null;
+                // Persister la valeur finale
+                updateAgent(zone, idx, 'notes', textarea.value);
+            };
+            recognition.start();
+            currentRecognition = recognition;
+            btnEl.classList.add('listening');
+            textarea.classList.add('dictating');
+            toast('Dictée en cours… reclique pour arrêter', 'info', 2000);
+        }
+
+        // ─── Recherche dans historique ───
+        function filtrerHistorique() {
+            const q = (document.getElementById('historique-search-input')?.value || '').toLowerCase().trim();
+            document.querySelectorAll('.historique-item').forEach(item => {
+                if (!q) { item.style.display = ''; return; }
+                const tokens = q.split(/\s+/);
+                const hay = item.dataset.search || '';
+                const match = tokens.every(t => hay.includes(t));
+                item.style.display = match ? '' : 'none';
+            });
+        }
+
         // Restaurer le mode sombre et les données
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark');
@@ -3550,7 +4152,7 @@
         const savedData = localStorage.getItem('passation_data');
         if (savedData) {
             try {
-                const loaded = JSON.parse(savedData);
+                const loaded = migrateData(JSON.parse(savedData));
                 const fresh = initData();
                 // Fusionner : on garde les données existantes, on initialise les zones manquantes
                 ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
@@ -3572,8 +4174,54 @@
         renderZones();
         refreshIcons();
 
+        // Initialisation des indicateurs live
+        marquerSauvegarde();
+        majCompteARebours();
+        // Tick toutes les 30s pour rafraîchir compte à rebours, sauvegardé, durées
+        setInterval(tickGlobal, 30000);
+        // Premier tick rapide à 2s pour que tout s'aligne
+        setTimeout(tickGlobal, 2000);
+
         // Chargement depuis JSONBin (données partagées entre tous les postes)
-        chargerDepuisJsonBin();
+        chargerDepuisJsonBin().then(() => {
+            rafraichirDatalistPannes();
+            rafraichirDatalistAgents();
+        });
+
+        // ─── Enregistrement Service Worker (PWA) ───
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.info('[PWA] Service Worker enregistré'))
+                .catch(err => console.warn('[PWA] Échec SW:', err));
+        }
+
+        // ─── Polling JSONBin temps réel : refresh historique toutes les 60s ───
+        let dernierHistoriqueSerialise = '';
+        async function pollerHistoriqueDistant() {
+            try {
+                const etat = await jsonBinStore.lire();
+                if (!etat || !Array.isArray(etat.historique)) return;
+                const serialise = JSON.stringify(etat.historique.map(p => p.id).sort());
+                if (serialise !== dernierHistoriqueSerialise) {
+                    dernierHistoriqueSerialise = serialise;
+                    // Fusion silencieuse avec localStorage
+                    const local = lireHistorique();
+                    const map = new Map();
+                    [...etat.historique, ...local].forEach(p => map.set(p.id, p));
+                    const fusion = Array.from(map.values()).sort((a, b) => b.id - a.id).slice(0, 50);
+                    localStorage.setItem('passations_historique', JSON.stringify(fusion));
+                    rafraichirDatalistPannes();
+                    rafraichirDatalistAgents();
+                    // Si la modale historique est ouverte, refresh visuel
+                    if (document.getElementById('modal-historique').classList.contains('open')) {
+                        renderHistorique();
+                    }
+                }
+            } catch(e) {
+                console.warn('[Collab] Polling échoué:', e);
+            }
+        }
+        setInterval(pollerHistoriqueDistant, 60000);
 
         // ════════════════════════════════════════════════════════
         // ANIMATIONS — Ripple + Confetti + Spotlight tracking
