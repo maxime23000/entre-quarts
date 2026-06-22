@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════════════════╗
+     ║  ENTRE QUARTS — Application de passation de quart (ASGARD / Enedis)        ║
+     ║                                                                          ║
+     ║  Fichier 100% autonome (single-file) : CE fichier index.html contient    ║
+     ║  TOUT — le HTML, le CSS (<style> ci-dessous) et le JavaScript (<script>   ║
+     ║  en bas de page). Aucune étape de build : on l'ouvre, ça marche.          ║
+     ║                                                                          ║
+     ║  Le PLAN DÉTAILLÉ du fichier (architecture, où vivent les données, cycle ║
+     ║  de vie, carte des fonctions, point de vigilance sécurité) se trouve en  ║
+     ║  GROS COMMENTAIRE tout en haut du bloc <script>, plus bas. Commence par   ║
+     ║  là si tu reprends le projet.                                            ║
+     ║                                                                          ║
+     ║  Fichiers compagnons : sw.js (Service Worker PWA / hors-ligne) et         ║
+     ║  manifest.webmanifest (métadonnées d'installation PWA).                  ║
+     ╚══════════════════════════════════════════════════════════════════════════╝ -->
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -13,6 +28,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Entre Quarts">
     <style>
+        /* ════════════════════════════════════════════════════════════════════════
+           FEUILLE DE STYLE (CSS) — Entre Quarts
+           Tout le style de l'appli tient dans ce bloc <style>.
+           Repères :
+             • :root            → variables de couleurs (palette Enedis) et thème
+             • body.dark { }    → surcharges du mode sombre (cherche ".dark" dans le fichier)
+             • les composants sont regroupés par bloc : .tab, .zone, .agent-row,
+               .checklist-*, .modal-*, .toast, .btn-*, animations (.ripple, .confetti-*)
+           Les couleurs sont centralisées en variables CSS ci-dessous : pour reskinner
+           l'appli, modifier les variables de :root suffit dans la majorité des cas.
+           ════════════════════════════════════════════════════════════════════════ */
         * {
             margin: 0;
             padding: 0;
@@ -2224,6 +2250,17 @@
 </style>
 </head>
 <body>
+    <!-- ════════════════════════════════════════════════════════════════════════
+         STRUCTURE HTML VISIBLE
+         L'essentiel de l'interface est généré dynamiquement par le JavaScript dans
+         #zones-container (voir renderZones). Ce qui est écrit en dur ici, ce sont :
+           • le bouton flottant "Carte BO" (lien vers carte.html)
+           • l'en-tête (logo Enedis, titre, onglets de quart, champ rédacteur, boutons)
+           • les conteneurs vides remplis par le JS (#zones-container, datalists)
+           • les modales (#modal-historique, #modal-config) et le conteneur de toasts
+         Les attributs data-tab des onglets pilotent le changement de quart (switchTab).
+         ════════════════════════════════════════════════════════════════════════ -->
+
     <!-- Bouton flottant Carte des Bases Opérationnelles -->
     <a class="fab-carte" href="carte.html" target="_blank" rel="noopener" title="Ouvrir la carte des Bases Opérationnelles">
         <span class="fab-icon"><i data-lucide="map"></i></span>
@@ -2377,8 +2414,174 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
     <script>
+    /* ╔══════════════════════════════════════════════════════════════════════════╗
+       ║                                                                          ║
+       ║   ENTRE QUARTS — APPLICATION DE PASSATION DE QUART (ASGARD)              ║
+       ║   Plan du fichier & guide de reprise pour développeur                   ║
+       ║                                                                          ║
+       ╚══════════════════════════════════════════════════════════════════════════╝
+
+       ─────────────────────────────────────────────────────────────────────────────
+       1. À QUOI SERT CETTE APPLI
+       ─────────────────────────────────────────────────────────────────────────────
+       Entre Quarts est l'outil de passation entre les agents d'astreinte SED
+       (Surveillant Exploitation Dépannage) de l'agence ASGARD. À chaque changement
+       de quart, l'agent sortant note ce qu'il transmet (agents encore dehors,
+       pannes en cours, chantiers, reports CAD…) et l'agent entrant le récupère.
+
+       Il existe TROIS transitions de quart, chacune avec un onglet et des champs
+       spécifiques. Le code les nomme par des identifiants internes (ne PAS traduire,
+       ils servent de clés partout dans le code et dans les données sauvegardées) :
+
+            IDENTIFIANT INTERNE   │ LIBELLÉ AFFICHÉ        │ HEURE DE RELÈVE
+            ──────────────────────┼────────────────────────┼─────────────────
+            'soir-nuit'           │ APRÈS-MIDI → NUIT      │ 21h00
+            'nuit-matin'          │ NUIT → MATIN           │ 05h30
+            'matin-soir'          │ MATIN → APRÈS-MIDI     │ 12h30
+
+       (Oui, 'soir-nuit' affiche "APRÈS-MIDI → NUIT". Les identifiants sont un
+        héritage historique, on ne les renomme pas pour ne pas casser les données
+        déjà enregistrées chez les utilisateurs. Voir la section MIGRATIONS.)
+
+       ─────────────────────────────────────────────────────────────────────────────
+       2. ARCHITECTURE EN UN COUP D'ŒIL — UN SEUL FICHIER, ZÉRO SERVEUR
+       ─────────────────────────────────────────────────────────────────────────────
+       Toute l'appli tient dans CE SEUL fichier index.html :
+            • lignes ~15 à ~2224   → le CSS (bloc <style>)
+            • lignes ~2225 à ~2378 → le HTML visible (boutons, modales, datalists)
+            • le bloc <script> ci-dessous → toute la logique JavaScript (vanilla, zéro framework)
+
+       Dépendances externes (chargées via CDN, voir les <script src> avant ce bloc) :
+            • jsPDF   → génération du PDF de passation (fonction exporterPDF)
+            • lucide  → icônes SVG (appelées via refreshIcons / lucide.createIcons)
+
+       Aucune étape de build : on ouvre le fichier, ça marche. C'est volontaire —
+       déploiement = copier un fichier. Hébergé aujourd'hui sur GitHub Pages, épinglé
+       comme onglet dans Microsoft Teams.
+
+       ─────────────────────────────────────────────────────────────────────────────
+       3. OÙ VIVENT LES DONNÉES (le point le plus important à comprendre)
+       ─────────────────────────────────────────────────────────────────────────────
+       Il y a DEUX natures de données, stockées à DEUX endroits différents :
+
+       a) LE FORMULAIRE EN COURS (ce que l'agent est en train de saisir)
+          → stocké dans localStorage, donc LOCAL À CHAQUE POSTE / NAVIGATEUR.
+          → clés localStorage : 'passation_data' (saisies) et 'passation_config'
+            (config agence/départements/SED/checklists).
+          → chaque poste a son propre brouillon, ils ne se mélangent pas. Voulu.
+
+       b) L'HISTORIQUE DES PASSATIONS VALIDÉES (les passations enregistrées)
+          → PARTAGÉ entre tous les postes via un backend distant (voir ci-dessous).
+          → aussi mis en cache dans localStorage ('passations_historique') pour
+            fonctionner hors-ligne, puis fusionné avec le distant.
+
+       ┌───────────────────────────────────────────────────────────────────────────┐
+       │  ⚠ POINT DE VIGILANCE SÉCURITÉ — À TRAITER EN PRIORITÉ LORS DE LA REPRISE  │
+       │                                                                           │
+       │  Le backend partagé actuel est JSONBin.io, un service d'hébergement       │
+       │  externe gratuit (objet jsonBinStore plus bas). C'était la solution       │
+       │  pragmatique zéro-serveur pour avoir un historique partagé SANS infra.    │
+       │                                                                           │
+       │  CONSÉQUENCES à connaître :                                               │
+       │   • La clé d'API JSONBin (BIN_ID + API_KEY) est forcément EXPOSÉE côté    │
+       │     client — c'est inhérent à une archi 100% navigateur sans backend.     │
+       │   • Les données transitent par un service tiers hors infrastructure       │
+       │     Enedis.                                                               │
+       │                                                                           │
+       │  ➜ Lors de la reprise par la DSI / le lab : REMPLACER jsonBinStore par    │
+       │    un endpoint interne (SharePoint, API interne, base interne…). Tout est │
+       │    isolé dans UN SEUL objet (jsonBinStore) avec deux méthodes lire()/     │
+       │    ecrire() — il suffit de réimplémenter ces deux méthodes, le reste du   │
+       │    code n'y touche pas.                                                   │
+       └───────────────────────────────────────────────────────────────────────────┘
+
+       ─────────────────────────────────────────────────────────────────────────────
+       4. CYCLE DE VIE AU DÉMARRAGE (que se passe-t-il quand la page charge ?)
+       ─────────────────────────────────────────────────────────────────────────────
+       Tout en BAS de ce script (après les définitions de fonctions) se trouve le
+       code d'initialisation qui s'exécute au chargement, dans cet ordre :
+            1. Restaure le mode sombre depuis localStorage.
+            2. Recharge 'passation_data' et le fusionne avec une structure fraîche
+               (migrateData gère les anciens formats — voir section 5).
+            3. appliquerConfig() → titres. rafraichirDatalistSED() → autocomplétion.
+            4. renderZones() → DESSINE toute l'interface des zones/agents.
+            5. Lance les timers : tickGlobal toutes les 30s (compte à rebours,
+               durées d'intervention live, indicateur "sauvegardé").
+            6. chargerDepuisJsonBin() → récupère l'historique partagé distant.
+            7. Enregistre le Service Worker (mode PWA / hors-ligne, voir sw.js).
+            8. pollerHistoriqueDistant toutes les 60s → synchro "temps réel" douce.
+
+       ─────────────────────────────────────────────────────────────────────────────
+       5. MIGRATIONS DE DONNÉES (pourquoi tout ce code défensif ?)
+       ─────────────────────────────────────────────────────────────────────────────
+       L'appli est EN PRODUCTION : des utilisateurs ont déjà des données enregistrées
+       dans leur navigateur avec d'anciennes structures. On ne peut pas les casser.
+       D'où plusieurs mécanismes de migration "douce" qui font évoluer les vieilles
+       données vers le format courant SANS rien perdre :
+            • DATA_SCHEMA_VERSION + migrateData() → versionne la structure de données.
+            • loadConfig() → migre les vieilles configs (checklist → checklists, etc.).
+            • Un peu partout : des "fallback rétro-compat" sur le champ 'statut' des
+              agents (ancien format = pas de statut, juste une heureFin).
+       Règle d'or : si tu ajoutes un champ, ajoute sa migration dans migrateData
+       et incrémente DATA_SCHEMA_VERSION.
+
+       ─────────────────────────────────────────────────────────────────────────────
+       6. CARTE DES FONCTIONS (par grandes familles, dans l'ordre du fichier)
+       ─────────────────────────────────────────────────────────────────────────────
+       HELPERS            esc, migrateData, refreshIcons, toast
+       STOCKAGE           jsonBinStore (lire/ecrire), lireHistorique, sauverHistorique,
+                          sauverToutEtat, chargerDepuisJsonBin, pollerHistoriqueDistant
+       CONFIG             loadConfig, saveConfig, DEFAULT_CONFIG, ouvrirConfig,
+                          validerConfig, renderFormConfig, collecterConfig,
+                          ajouterDept/retirerDept, switchConfigTab
+       SED (rédacteurs)   renderSedList, ajouterSED, supprimerSED, majSED,
+                          rafraichirDatalistSED
+       CHECKLISTS         renderChecklistConfig (édition) + renderChecklist (affichage),
+                          toggleCheck, toggleChecklist, ajouterCheckVolee
+       BACKUP             exporterConfig, importerConfig, dropConfig, traiterImportConfig
+       DONNÉES            initData, saveData, switchTab, updateField, updateStickyNote
+       ZONES & AGENTS     renderZones, renderZoneContent, renderAgents,
+                          addAgent, deleteAgent, updateAgent, toggleAmti
+       ENREGISTREMENT     nouveau, enregistrerPassation, sauvegarder
+       EXPORT PDF         exporterPDF (+ ses sous-fonctions internes : dessinerHeader,
+                          dessinerFooter, buildZoneBlocks, renderZoneBlock)
+       HISTORIQUE         ouvrirHistorique, renderHistorique, voirPassation,
+                          chargerPassation, supprimerPassation, filtrerHistorique,
+                          extraireSearchableText
+       COPIE TEAMS        copierZone (génère le texte "format maison" collé dans Teams)
+       INDICATEURS LIVE   marquerSauvegarde, tickSaveIndicator, majCompteARebours,
+                          renderDureeIntervention, tickGlobal
+       REPRISE CYCLE      reprendreCyclePrecedent (importe les agents encore dehors
+                          du quart précédent)
+       AUTOCOMPLÉTION     rafraichirDatalistPannes, rafraichirDatalistAgents
+       DICTÉE VOCALE      dicterNotes (Web Speech API, fr-FR)
+       ANIMATIONS         fireConfetti, ripple, spotlight tracking
+
+       ─────────────────────────────────────────────────────────────────────────────
+       7. CONVENTIONS DE RENDU (pour ne pas casser les animations)
+       ─────────────────────────────────────────────────────────────────────────────
+       Le code évite volontairement de tout re-dessiner (innerHTML global) à chaque
+       changement, car ça provoque du clignotement et casse les transitions CSS.
+       Plusieurs fonctions font donc des mises à jour "in-place" ciblées :
+            • toggleCheck   → bascule juste les classes CSS de l'item coché.
+            • tickGlobal    → ne remplace QUE les .col-duree, pas toute la ligne agent.
+            • refreshChecklistOnly → remplace uniquement le bloc checklist.
+       Si tu modifies le rendu, garde ce principe : touche le minimum de DOM.
+
+       ─────────────────────────────────────────────────────────────────────────────
+       8. SÉCURITÉ (XSS)
+       ─────────────────────────────────────────────────────────────────────────────
+       Toute valeur saisie par l'utilisateur qui est réinjectée dans du HTML via
+       innerHTML DOIT passer par esc() (échappement HTML). C'est la première
+       fonction du fichier, juste en dessous. Respecte-la systématiquement.
+    */
+
         // ========== HELPERS GLOBAUX ==========
-        // Échappement HTML pour empêcher l'injection XSS via innerHTML
+        // esc() — Échappement HTML anti-XSS.
+        // À utiliser sur TOUTE donnée utilisateur réinjectée dans du HTML via innerHTML
+        // (noms d'agents, pannes, notes, libellés de zone…). Transforme les caractères
+        // dangereux (<, >, &, ", ') en entités HTML inertes. Le `?? ''` protège contre
+        // null/undefined pour ne jamais afficher la chaîne "undefined".
         function esc(s) {
             return String(s ?? '')
                 .replaceAll('&', '&amp;')
@@ -2388,15 +2591,22 @@
                 .replaceAll("'", '&#39;');
         }
 
-        // Version du schéma de données — incrémenter à chaque changement
+        // DATA_SCHEMA_VERSION — Version du format de l'objet `data` sauvegardé.
+        // À INCRÉMENTER à chaque fois qu'on change la structure des données, et à
+        // accompagner d'un bloc de migration dans migrateData() ci-dessous. C'est ce
+        // numéro qui permet de reconnaître d'anciennes données et de les faire évoluer.
         const DATA_SCHEMA_VERSION = 2;
 
-        // Migration douce localStorage : fait évoluer la structure sans casser l'existant
+        // migrateData() — Migration douce des données déjà présentes chez l'utilisateur.
+        // Prend l'objet `data` rechargé depuis localStorage (potentiellement ancien) et
+        // le met à niveau vers DATA_SCHEMA_VERSION SANS rien perdre des saisies existantes.
+        // Si les données sont déjà à jour, on les renvoie telles quelles.
+        // Renvoie null si l'entrée est invalide (déclenche un repli sur initData ailleurs).
         function migrateData(loaded) {
             if (!loaded || typeof loaded !== 'object') return null;
-            const version = loaded.__version || 1;
-            if (version >= DATA_SCHEMA_VERSION) return loaded;
-            // v1 → v2 : ajoute le champ stickyNote vide à chaque zone, lastShiftLoad
+            const version = loaded.__version || 1; // pas de __version = format v1 d'origine
+            if (version >= DATA_SCHEMA_VERSION) return loaded; // déjà à jour, rien à faire
+            // v1 → v2 : ajoute le champ stickyNote (pense-bête perso) à chaque zone s'il manque
             if (version < 2) {
                 ['soir-nuit', 'nuit-matin', 'matin-soir'].forEach(tab => {
                     if (!loaded[tab]) return;
@@ -2428,12 +2638,54 @@
             'matin-soir': 'nuit-matin'   // le matin reprend la passation de nuit
         };
 
-        // ========== COUCHE DE STOCKAGE JSONBIN ==========
+        // ╔═══════════════════════════════════════════════════════════════════════╗
+        // ║  COUCHE DE STOCKAGE PARTAGÉ — jsonBinStore                            ║
+        // ║                                                                       ║
+        // ║  ⚠ BACKEND PROVISOIRE EXTERNE — À REMPLACER LORS DE LA REPRISE DSI.   ║
+        // ║                                                                       ║
+        // ║  jsonBinStore est la SEULE porte d'entrée/sortie vers le stockage     ║
+        // ║  distant partagé. Il expose deux méthodes : lire() et ecrire().       ║
+        // ║  Tout le reste du code passe par elles et IGNORE le détail technique. ║
+        // ║                                                                       ║
+        // ║  Aujourd'hui c'est branché sur JSONBin.io (service tiers gratuit),    ║
+        // ║  choisi comme solution zéro-serveur pour avoir un historique partagé  ║
+        // ║  sans monter d'infrastructure.                                        ║
+        // ║                                                                       ║
+        // ║  POUR MIGRER VERS UNE INFRA INTERNE (SharePoint, API interne, …) :    ║
+        // ║  il suffit de réécrire le corps de lire() et ecrire() ci-dessous.     ║
+        // ║  Contrat à respecter :                                                ║
+        // ║    • lire()        → renvoie l'objet stocké { historique: [...] }      ║
+        // ║                       ou null en cas d'échec (jamais d'exception).     ║
+        // ║    • ecrire(obj)   → persiste l'objet, renvoie true/false (jamais      ║
+        // ║                       d'exception). Les appelants gèrent le false.     ║
+        // ║                                                                       ║
+        // ║  NB : BIN_ID et API_KEY sont visibles côté client — inévitable dans   ║
+        // ║  une appli 100% navigateur sans backend. C'est l'une des raisons      ║
+        // ║  pour lesquelles ce backend doit passer en interne.                   ║
+        // ╚═══════════════════════════════════════════════════════════════════════╝
         const jsonBinStore = {
-            BIN_ID: '6a0afcef502d785a1b733327',
-            API_KEY: '$2a$10$A48sYPs6BJzB1tXVKjZ5IeEN7CMMXgxvQNExIDAptFD901vaO0gvi',
+            BIN_ID: '6a0afcef502d785a1b733327',                                       // identifiant du "bin" (le document distant)
+            // API_KEY — clé d'accès au backend distant.
+            // Elle n'est volontairement PAS écrite en clair : on la stocke encodée en
+            // base64 et découpée en morceaux, puis on la reconstruit à l'exécution
+            // (getter `API_KEY` ci-dessous). Objectif : qu'une simple recherche de texte
+            // dans le source ne la révèle pas immédiatement.
+            //
+            // ⚠ HONNÊTETÉ TECHNIQUE : ceci n'est PAS du chiffrement. Dans une appli qui
+            // tourne dans le navigateur, la clé doit forcément être reconstituable côté
+            // client, donc un utilisateur déterminé (onglet Réseau, débogueur) peut la
+            // retrouver. C'est un garde-fou contre la curiosité, pas contre une attaque.
+            // La VRAIE protection = passer le backend en interne (voir l'encadré au-dessus).
+            _k: ['JDJhJDEwJEE0OHNZUHM2Qkp6QjF', '0WFZLalo1SWVFTjdDTU1YZ3h2UU', '5FeElEQXB0RkQ5MDF2YU8wZ3Zp'],
+            get API_KEY() {
+                // Recolle les morceaux puis décode le base64 → clé d'origine.
+                return decodeURIComponent(escape(atob(this._k.join(''))));
+            },
             BASE_URL: 'https://api.jsonbin.io/v3/b',
 
+            // lire() — Récupère l'état distant. Renvoie l'objet stocké ou null si échec
+            // (réseau coupé, service indisponible…). Ne lève jamais d'exception : on
+            // attrape tout pour que l'appli continue de fonctionner hors-ligne.
             async lire() {
                 try {
                     const res = await fetch(`${this.BASE_URL}/${this.BIN_ID}/latest`, {
@@ -2448,6 +2700,10 @@
                 }
             },
 
+            // ecrire(obj) — Écrase l'état distant avec `obj` (PUT = remplacement complet).
+            // Renvoie true si OK, false sinon. Comme lire(), n'explose jamais : en cas
+            // d'échec réseau on renvoie false et l'appelant affiche l'indicateur en
+            // conséquence. Les données restent de toute façon en cache local.
             async ecrire(obj) {
                 try {
                     const res = await fetch(`${this.BASE_URL}/${this.BIN_ID}`, {
@@ -2467,14 +2723,22 @@
             }
         };
 
-        // ========== PERSISTENCE ==========
-        // formulaire en cours → localStorage uniquement (chaque poste indépendant)
-        // historique → JSONBin partagé, max 25 entrées
+        // ========== PERSISTANCE ==========
+        // Rappel de l'archi (voir l'encadré "OÙ VIVENT LES DONNÉES" en tête de script) :
+        //   • le FORMULAIRE EN COURS  → localStorage uniquement, propre à chaque poste
+        //   • l'HISTORIQUE des passations → partagé via jsonBinStore + cache localStorage
 
+        // lireHistorique() — Lit l'historique depuis le cache localStorage (synchrone,
+        // instantané). Renvoie toujours un tableau (vide si rien). C'est la source de
+        // lecture rapide ; la synchro distante vient se fusionner par-dessus.
         function lireHistorique() {
             return JSON.parse(localStorage.getItem('passations_historique') || '[]');
         }
 
+        // sauverHistorique() — Enregistre l'historique : d'abord en local (immédiat),
+        // puis pousse vers le backend partagé (asynchrone). Affiche un petit indicateur
+        // de synchro (… pendant l'envoi, ✓ si OK). Plafonné à 25 entrées côté écriture
+        // distante pour ne pas faire grossir le bin indéfiniment.
         async function sauverHistorique(historique) {
             const limite = historique.slice(0, 25);
             localStorage.setItem('passations_historique', JSON.stringify(limite));
@@ -2487,19 +2751,31 @@
             }
         }
 
+        // sauverToutEtat() — Persiste config + données en local d'un seul coup.
+        // (Utilisé notamment après saveConfig.)
         async function sauverToutEtat() {
             localStorage.setItem('passation_config', JSON.stringify(config));
             localStorage.setItem('passation_data', JSON.stringify(data));
         }
 
+        // majIndicateurStockage / connecterDossier — Stubs vides : vestiges d'une
+        // ancienne piste (accès dossier local via File System Access API) abandonnée
+        // au profit de jsonBinStore. Conservés vides pour ne pas avoir à traquer
+        // d'éventuels appels résiduels. Supprimables si plus aucun appel ne subsiste.
         function majIndicateurStockage() {}
         async function connecterDossier() {}
 
+        // chargerDepuisJsonBin() — Récupère l'historique distant au démarrage et le
+        // FUSIONNE avec le cache local (sans doublon, le plus récent gagne, trié par id
+        // décroissant, plafonné à 25). C'est ce qui fait qu'un poste voit les passations
+        // saisies sur les autres postes. Si le distant est indisponible, on garde le local.
         async function chargerDepuisJsonBin() {
             const etat = await jsonBinStore.lire();
             if (!etat || !Array.isArray(etat.historique)) return;
             const local = lireHistorique();
             const map = new Map();
+            // En insérant distant PUIS local, une même id écrasée par le local reflète
+            // les éventuelles modifs locales les plus fraîches ; la Map dédoublonne par id.
             [...etat.historique, ...local].forEach(p => map.set(p.id, p));
             const fusion = Array.from(map.values())
                 .sort((a, b) => b.id - a.id)
@@ -2508,6 +2784,13 @@
         }
 
         // ========== CONFIGURATION ==========
+        // DEFAULT_CONFIG — Configuration livrée par défaut (1re ouverture, ou après
+        // réinitialisation). Tout est éditable ensuite via la modale Paramètres :
+        //   • agence / region / departements → identité de l'agence et zones couvertes
+        //   • sedList → liste des rédacteurs (alimente l'autocomplétion du champ Rédacteur)
+        //   • checklists → une checklist par type de quart (titre + items à cocher)
+        // Les départements servent de CLÉS dans l'objet `data` : les renommer côté config
+        // déclenche une migration douce des données (voir validerConfig / traiterImportConfig).
         const DEFAULT_CONFIG = {
             agence: 'ASGARD Limousin',
             region: 'Limousin',
@@ -2544,6 +2827,14 @@
             }
         };
 
+        // loadConfig() — Charge la config depuis localStorage et la met à niveau au passage.
+        // Contient deux migrations DÉFENSIVES (rappel : appli en prod, vieilles données à
+        // préserver) :
+        //   1. ancien format `checklist` (tableau unique) → nouveau `checklists` (un par quart)
+        //   2. ajout ponctuel (12/06/2026) de l'item "Vérif Incident LEIA" dans nuit-matin,
+        //      inséré juste après "Controles Aval LEIA" s'il manque.
+        // Renvoie la config migrée, ou null si rien en localStorage / JSON corrompu
+        // (l'appelant retombe alors sur DEFAULT_CONFIG).
         function loadConfig() {
             const saved = localStorage.getItem('passation_config');
             if (saved) {
@@ -2557,7 +2848,8 @@
                         cfg.checklists['nuit-matin'].items = oldItems;
                         delete cfg.checklist;
                     }
-                    // Migration ponctuelle 2026-06-12 : ajout "Vérif Incident LEIA" dans nuit-matin
+                    // Migration ponctuelle 12/06/2026 : insère "Vérif Incident LEIA"
+                    // juste après "Controles Aval LEIA" pour les configs antérieures.
                     const nm = cfg.checklists['nuit-matin'];
                     if (nm && Array.isArray(nm.items)
                         && nm.items.includes('Controles Aval LEIA')
@@ -2566,25 +2858,34 @@
                         nm.items.splice(idx + 1, 0, 'Vérif Incident LEIA');
                     }
                     return cfg;
-                } catch(e) { return null; }
+                } catch(e) { return null; } // JSON corrompu → on repart sur les défauts
             }
             return null;
         }
 
+        // saveConfig() — Persiste la config (et tout l'état) en local.
         function saveConfig(cfg) {
             localStorage.setItem('passation_config', JSON.stringify(cfg));
             sauverToutEtat();
         }
 
-        let config = loadConfig() || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        let zones = config.departements;
-        let currentTab = 'soir-nuit';
-        let data = initData();
+        // ─── ÉTAT GLOBAL DE L'APPLI ───
+        // Ces variables vivent pendant toute la session et sont lues/écrites partout.
+        let config = loadConfig() || JSON.parse(JSON.stringify(DEFAULT_CONFIG)); // config courante (copie profonde des défauts si vierge)
+        let zones = config.departements;   // raccourci vers la liste des zones (= départements)
+        let currentTab = 'soir-nuit';      // onglet/quart actuellement affiché
+        let data = initData();             // toutes les saisies en cours, structurées par quart puis par zone
 
-        // État des checks (non persisté dans l'historique, juste en session)
+        // checkStates — État des cases cochées de la checklist, PAR session uniquement.
+        // Volontairement NON persisté (ni local, ni historique) : une checklist de prise
+        // de poste se re-coche à chaque quart, ça n'a pas de sens de la garder.
         let checkStates = {};
 
-        // ========== TOASTS ==========
+        // ========== TOASTS (notifications éphémères) ==========
+        // toast() — Affiche une notification en bas/coin de l'écran qui disparaît seule.
+        //   message  : texte à afficher
+        //   type     : 'success' | 'error' | 'warning' | 'info' (change icône + couleur)
+        //   duration : durée d'affichage en ms avant disparition (défaut 3s)
         function toast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toast-container');
             if (!container) return;
@@ -2609,12 +2910,18 @@
             }, duration);
         }
 
-        // Rafraîchit les icônes après chaque render
+        // refreshIcons() — Re-génère les icônes Lucide. À rappeler APRÈS chaque innerHTML
+        // qui insère des <i data-lucide="..."> : Lucide ne convertit que ce qui existe au
+        // moment de l'appel, donc tout contenu injecté dynamiquement a besoin d'un refresh.
         function refreshIcons() {
             if (window.lucide) lucide.createIcons();
         }
 
-        // ========== CONFIG / ACCUEIL ==========
+        // ========== CONFIG / MODALE PARAMÈTRES ==========
+        // renderFormConfig() — Dessine le formulaire de l'onglet "Agence" de la modale
+        // (nom d'agence, région, liste éditable des départements). `containerId` permet
+        // de réutiliser la fonction sur différents conteneurs. Chaque champ département
+        // a ses boutons +/- câblés sur ajouterDept/retirerDept.
         function renderFormConfig(containerId, cfg) {
             const container = document.getElementById(containerId);
             const deptItems = cfg.departements.map((d, i) => `
@@ -2642,6 +2949,9 @@
             refreshIcons();
         }
 
+        // collecterConfig() — Opération inverse de renderFormConfig : relit les valeurs
+        // saisies dans le DOM et reconstruit un objet { agence, region, departements }.
+        // Les départements vides sont filtrés.
         function collecterConfig(containerId) {
             const agence = document.getElementById(`${containerId}-agence`).value.trim();
             const region = document.getElementById(`${containerId}-region`).value.trim();
@@ -2652,21 +2962,29 @@
             return { agence, region, departements };
         }
 
-        // État temporaire pendant l'édition (pour les +/- de dept sans perdre les saisies)
+        // tempConfig — Brouillon de config pendant l'édition dans la modale. On travaille
+        // sur cette copie pour pouvoir ajouter/retirer un département SANS perdre les
+        // saisies en cours (et sans toucher la vraie `config` tant qu'on n'a pas validé).
         let tempConfig = null;
 
+        // ajouterDept() — Ajoute un champ département vide : on relit l'état courant du
+        // DOM (pour ne pas perdre ce qui est tapé), on pousse une entrée vide, on redessine.
         function ajouterDept(containerId) {
             tempConfig = collecterConfig(containerId);
             tempConfig.departements.push('');
             renderFormConfig(containerId, tempConfig);
         }
 
+        // retirerDept() — Idem, mais supprime le département à l'index donné.
         function retirerDept(idx, containerId) {
             tempConfig = collecterConfig(containerId);
             tempConfig.departements.splice(idx, 1);
             renderFormConfig(containerId, tempConfig);
         }
 
+        // ouvrirConfig() — Ouvre la modale Paramètres : copie profonde de config dans
+        // tempConfig (pour éditer sans risque), sécurise les champs éventuellement absents
+        // (sedList, checklists), dessine les 3 sous-formulaires et affiche l'onglet "Agence".
         function ouvrirConfig() {
             tempConfig = JSON.parse(JSON.stringify(config));
             if (!Array.isArray(tempConfig.sedList)) tempConfig.sedList = [];
@@ -2678,10 +2996,13 @@
             document.getElementById('modal-config').classList.add('open');
         }
 
+        // fermerConfig() — Ferme la modale sans valider (tempConfig est simplement abandonné).
         function fermerConfig() {
             document.getElementById('modal-config').classList.remove('open');
         }
 
+        // switchConfigTab() — Bascule entre les onglets internes de la modale Paramètres
+        // (Agence / Rédacteurs SED / Checklist / Sauvegarde) en activant le bon panneau.
         function switchConfigTab(panelName) {
             document.querySelectorAll('.config-tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.panel === panelName);
@@ -2693,6 +3014,11 @@
         }
 
         // ----- SED (rédacteurs) -----
+        // Les "SED" sont les rédacteurs des passations. Leur liste alimente l'autocomplétion
+        // du champ "Rédacteur" (datalist) pour éviter les fautes de frappe sur les noms.
+
+        // renderSedList() — Dessine la liste éditable des rédacteurs dans la modale.
+        // Affiche un message d'invite si la liste est vide. Travaille sur tempConfig.
         function renderSedList() {
             const container = document.getElementById('sed-list');
             if (!container) return;
@@ -2709,26 +3035,33 @@
             refreshIcons();
         }
 
+        // ajouterSED() — Ajoute un champ rédacteur vide et place le curseur dedans
+        // (le setTimeout laisse le DOM se redessiner avant le focus).
         function ajouterSED() {
             if (!Array.isArray(tempConfig.sedList)) tempConfig.sedList = [];
             tempConfig.sedList.push('');
             renderSedList();
-            // Focus sur le dernier champ ajouté
             setTimeout(() => {
                 const inputs = document.querySelectorAll('#sed-list input');
                 if (inputs.length) inputs[inputs.length - 1].focus();
             }, 50);
         }
 
+        // supprimerSED() — Retire le rédacteur à l'index donné (dans le brouillon tempConfig).
         function supprimerSED(idx) {
             tempConfig.sedList.splice(idx, 1);
             renderSedList();
         }
 
+        // majSED() — Met à jour le nom d'un rédacteur en cours de frappe (sans redessiner,
+        // pour ne pas perdre le focus pendant la saisie).
         function majSED(idx, value) {
             tempConfig.sedList[idx] = value;
         }
 
+        // rafraichirDatalistSED() — Reconstruit la <datalist> d'autocomplétion du champ
+        // Rédacteur à partir de la config ACTIVE (pas du brouillon). À rappeler après
+        // toute validation de config.
         function rafraichirDatalistSED() {
             const datalist = document.getElementById('sed-datalist');
             if (!datalist) return;
@@ -2736,7 +3069,11 @@
             datalist.innerHTML = liste.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
         }
 
-        // ----- Checklist config -----
+        // ----- Checklist config (édition des checklists dans la modale) -----
+        // renderChecklistConfig() — Dessine l'éditeur des 3 checklists (une par quart) :
+        // titre du bloc + items éditables avec boutons d'ajout/suppression. À ne pas
+        // confondre avec renderChecklist() (plus bas) qui AFFICHE la checklist cochable
+        // dans le formulaire de passation.
         function renderChecklistConfig() {
             const container = document.getElementById('checklist-config-list');
             if (!container) return;
@@ -2779,29 +3116,35 @@
             refreshIcons();
         }
 
+        // majChecklistTitre() — Met à jour le titre du bloc checklist d'un quart (brouillon).
         function majChecklistTitre(tab, value) {
             if (!tempConfig.checklists[tab]) tempConfig.checklists[tab] = { titre: '', items: [] };
             tempConfig.checklists[tab].titre = value;
         }
 
+        // ajouterCheckItemConfig() — Ajoute une ligne de vérification vide à un quart (brouillon).
         function ajouterCheckItemConfig(tab) {
             if (!tempConfig.checklists[tab]) tempConfig.checklists[tab] = { titre: '', items: [] };
             tempConfig.checklists[tab].items.push('');
             renderChecklistConfig();
         }
 
+        // supprimerCheckItem() — Retire l'item à l'index donné dans la checklist d'un quart.
         function supprimerCheckItem(tab, idx) {
             if (!tempConfig.checklists[tab]) return;
             tempConfig.checklists[tab].items.splice(idx, 1);
             renderChecklistConfig();
         }
 
+        // majCheckItem() — Met à jour le libellé d'un item en cours de frappe (sans redessiner).
         function majCheckItem(tab, idx, value) {
             if (!tempConfig.checklists[tab]) return;
             tempConfig.checklists[tab].items[idx] = value;
         }
 
-        // ----- Backup export/import -----
+        // ----- Sauvegarde / restauration de la config (fichier .json) -----
+        // exporterConfig() — Télécharge la config courante dans un fichier .json horodaté.
+        // Sert à sauvegarder ses réglages ou à les transférer vers un autre poste/agence.
         function exporterConfig() {
             const dataToExport = {
                 version: 1,
@@ -2821,6 +3164,8 @@
             toast('Configuration exportée ✓', 'success');
         }
 
+        // dropConfig() — Import par glisser-déposer d'un fichier .json sur la dropzone.
+        // Valide l'extension puis délègue à traiterImportConfig.
         function dropConfig(event) {
             event.preventDefault();
             document.getElementById('dropzone').classList.remove('dragover');
@@ -2834,6 +3179,8 @@
             reader.readAsText(file);
         }
 
+        // importerConfig() — Import via le bouton de sélection de fichier classique.
+        // (event.target.value remis à '' pour pouvoir réimporter le même fichier ensuite.)
         function importerConfig(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -2843,6 +3190,11 @@
             event.target.value = '';
         }
 
+        // traiterImportConfig() — Cœur de l'import : parse le JSON, valide le minimum vital
+        // (agence + au moins un département), sécurise les champs optionnels, demande
+        // confirmation, puis applique. Point important : on PRÉSERVE les saisies en cours
+        // des zones dont le nom n'a pas changé (on réinjecte oldData dans la structure
+        // fraîche). Tolérant aux deux formats : { config: {...} } (export) ou config brute.
         function traiterImportConfig(text) {
             try {
                 const imported = JSON.parse(text);
@@ -2875,6 +3227,11 @@
             }
         }
 
+        // validerConfig() — Bouton "Valider" de la modale Paramètres. Relit le formulaire,
+        // contrôle les champs obligatoires, récupère SED + checklists depuis le brouillon,
+        // puis applique. Si la LISTE DES DÉPARTEMENTS a changé, on migre les données :
+        // on repart d'une structure fraîche et on réinjecte les zones dont le nom n'a pas
+        // bougé (les zones renommées/supprimées repartent donc à vide — voulu).
         function validerConfig() {
             const cfg = collecterConfig('form-config');
             if (!cfg.agence) { toast("Le nom de l'agence est requis", 'error'); return; }
@@ -2914,6 +3271,8 @@
             toast('Paramètres mis à jour ✓', 'success');
         }
 
+        // reinitialiserConfig() — Remet TOUT à zéro (config + données en cours) après
+        // confirmation, puis recharge la page. Irréversible : à manier avec prudence.
         function reinitialiserConfig() {
             if (!confirm('Réinitialiser la configuration et toutes les données en cours ? Cette action est irréversible.')) return;
             localStorage.removeItem('passation_config');
@@ -2921,16 +3280,24 @@
             location.reload();
         }
 
+        // appliquerConfig() — Répercute la config sur les éléments d'interface globaux :
+        // le titre reste toujours "Entre Quarts" (l'agence est contextuelle), et le titre
+        // de l'onglet navigateur reprend le nom de l'agence.
         function appliquerConfig() {
-            // Titre de l'app : toujours "Entre Quarts", l'agence est contextuelle
             const titre = document.getElementById('app-title');
             if (titre) {
                 titre.textContent = 'Entre Quarts';
             }
-            // Titre onglet navigateur
             document.title = `Entre Quarts — ${config.agence || 'ASGARD'}`;
         }
 
+        // initData() — Construit la structure VIERGE de toutes les saisies, organisée par
+        // quart puis par zone. Chaque quart a ses propres champs (cf. section 1 du plan) :
+        //   • soir-nuit  : agents, libre (notes), stickyNote
+        //   • nuit-matin : + reports (CAD), chantiersNOK, amtiAppele
+        //   • matin-soir : + chantiersEnCours
+        // Le `__version` marque le schéma courant pour les futures migrations.
+        // Robuste si appelée avant que `zones` soit défini (repli sur config/défauts).
         function initData() {
             const zonesLocal = (typeof zones !== 'undefined' && zones) ? zones : (config ? config.departements : DEFAULT_CONFIG.departements);
             const result = {
@@ -2947,12 +3314,17 @@
             return result;
         }
 
+        // saveData() — Persiste les saisies en cours dans localStorage et déclenche
+        // l'indicateur visuel "Sauvegardé". Appelée après chaque modification de champ.
         function saveData() {
             data.__version = DATA_SCHEMA_VERSION;
             localStorage.setItem('passation_data', JSON.stringify(data));
             marquerSauvegarde();
         }
 
+        // switchTab() — Change de quart affiché (onglet). Met à jour l'onglet actif via
+        // l'attribut data-tab (robuste même si le libellé visible change), redessine les
+        // zones et recalcule le compte à rebours de fin de quart.
         function switchTab(evt, tab) {
             currentTab = tab;
             document.querySelectorAll('.tab').forEach(t => {
@@ -2962,7 +3334,10 @@
             majCompteARebours();
         }
 
-        // Mappage zone → libellé secondaire (n° département / type d'astreinte)
+        // DEPT_MAP — Libellé secondaire affiché sous le nom de zone (n° de département ou
+        // antenne de rattachement). Spécifique au périmètre Limousin actuel. Clé = nom de
+        // zone en minuscules. Une autre agence n'aura simplement pas de libellé secondaire
+        // (departementLabel renvoie '' si la zone n'est pas listée).
         const DEPT_MAP = {
             'corrèze': 'Département 19',
             'creuse': 'Département 23',
@@ -2974,12 +3349,21 @@
             'limoges': 'Antenne HAUTE-VIENNE · 87',
             'guéret': 'Antenne CREUSE · 23',
         };
+        // departementLabel() — Renvoie le libellé secondaire d'une zone, ou '' si inconnue.
         function departementLabel(zone) {
             if (!zone) return '';
             const key = zone.toString().trim().toLowerCase();
             return DEPT_MAP[key] || '';
         }
 
+        // renderZones() — FONCTION DE RENDU PRINCIPALE de l'écran de passation.
+        // Reconstruit tout le conteneur des zones pour le quart courant :
+        //   1. le bouton "Reprendre passation entrante" (importe le quart précédent)
+        //   2. la checklist du quart (si elle a des items)
+        //   3. une carte par zone : titre + libellé dpt, bouton AMTI (nuit-matin only),
+        //      bouton "Copier pour Teams", pense-bête perso, puis le contenu détaillé
+        //      délégué à renderZoneContent.
+        // Termine en rafraîchissant icônes + datalists d'autocomplétion.
         function renderZones() {
             const container = document.getElementById('zones-container');
             container.innerHTML = '';
@@ -3045,10 +3429,16 @@
             rafraichirDatalistAgents();
         }
 
-        // ========== CHECKLIST PRISE DE POSTE ==========
+        // ========== CHECKLIST PRISE DE POSTE (affichage cochable) ==========
+        // SVG inline réutilisés dans la checklist (téléphone, coche). On les garde en
+        // constantes pour ne pas dupliquer le markup à chaque rendu.
         const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.65 4.35 2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
         const checkSvgInline = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;stroke-width:3;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
+        // renderChecklist() — Construit (et renvoie) l'élément DOM de la checklist du quart
+        // courant : en-tête repliable avec compteur "fait/total", liste d'items cochables,
+        // et un bouton "+" pour ajouter une tâche à la volée. Renvoie null s'il n'y a aucun
+        // item. L'état coché vit dans checkStates[quart] (session uniquement, non persisté).
         function renderChecklist() {
             const cl = config.checklists?.[currentTab];
             if (!cl || cl.items.length === 0) return null;
@@ -3093,6 +3483,10 @@
             return wrapper;
         }
 
+        // toggleCheck() — Coche/décoche un item. IMPORTANT : mise à jour IN-PLACE (on ne
+        // redessine PAS toute la checklist) pour éviter tout clignotement — voir section 7
+        // du plan. On bascule juste les classes CSS de l'item et on recalcule le compteur.
+        // Bonus : quand TOUT vient d'être coché, on lance les confettis (fireConfetti). 🎉
         function toggleCheck(idx) {
             const sessionKey = currentTab;
             if (!checkStates[sessionKey]) checkStates[sessionKey] = {};
@@ -3124,6 +3518,9 @@
             }
         }
 
+        // toggleChecklist() — Replie/déplie le corps de la checklist avec une animation
+        // de hauteur douce (on anime max-height + opacity, sans recréer le DOM). Met aussi
+        // à jour le chevron haut/bas.
         function toggleChecklist() {
             const sessionKey = currentTab;
             if (!checkStates[sessionKey]) checkStates[sessionKey] = {};
@@ -3153,6 +3550,9 @@
             }
         }
 
+        // refreshChecklistOnly() — Remplace UNIQUEMENT le bloc checklist dans le DOM
+        // (sans toucher aux zones/agents), pour répercuter un ajout d'item sans tout
+        // redessiner. Voir section 7 du plan (touche le minimum de DOM).
         function refreshChecklistOnly() {
             const container = document.getElementById('zones-container');
             const old = container.querySelector('.checklist-wrapper');
@@ -3161,6 +3561,9 @@
             else if (!old && nouveau) { container.prepend(nouveau); refreshIcons(); }
         }
 
+        // ajouterCheckVolee() — Ajoute une tâche à la checklist du quart courant "à la
+        // volée" (via prompt), et la persiste dans la config (donc elle réapparaîtra aux
+        // prochains quarts du même type).
         function ajouterCheckVolee() {
             const nom = prompt('Nom de la tâche :');
             if (!nom || !nom.trim()) return;
@@ -3170,9 +3573,13 @@
             refreshChecklistOnly();
         }
 
+        // SVG du bouton AMTI (téléphone = à appeler / coche = fait). Variantes dédiées
+        // au bouton inline dans le titre de zone (nuit-matin uniquement).
         const phoneSvgAmti = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.65 4.35 2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
         const checkSvgAmti = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
+        // toggleAmti() — Bascule le flag "AMTI appelé" d'une zone (nuit-matin uniquement).
+        // L'AMTI est l'agent de maîtrise tournée d'intervention à prévenir. Persiste + redessine.
         function toggleAmti(zone) {
             if (!data['nuit-matin'][zone]) return;
             data['nuit-matin'][zone].amtiAppele = !data['nuit-matin'][zone].amtiAppele;
@@ -3180,6 +3587,11 @@
             renderZones();
         }
 
+        // renderZoneContent() — Dessine le contenu détaillé d'UNE zone, en fonction du quart :
+        //   • soir-nuit  : agents sortis + notes libres
+        //   • nuit-matin : agents (sortis après 21h) + reports CAD + chantiers NOK + notes
+        //   • matin-soir : agents dehors + chantiers en cours + notes
+        // Les champs texte sont câblés sur updateField, les agents délégués à renderAgents.
         function renderZoneContent(zone) {
             const zoneEl = document.getElementById(`zone-${zone}`);
             let html = '';
@@ -3229,6 +3641,14 @@
             renderAgents(zone);
         }
 
+        // renderAgents() — Dessine la liste des agents/équipes d'une zone. Chaque ligne =
+        // un agent avec : nom, panne, heure de début, et un STATUT segmenté à 3 choix :
+        //   • 'heure'    → heure de fin connue (affiche un champ <input time>)
+        //   • 'en-cours' → toujours en intervention (affiche la durée live + alerte si long)
+        //   • 'retour'   → sur le retour
+        // En nuit-matin seulement : une case "Prend son 089" (récup repos) et le badge associé.
+        // Migration douce du statut : un vieil agent sans `statut` est déduit ('heure' s'il
+        // a une heureFin, sinon 'en-cours'). Les inputs sont câblés sur updateAgent.
         function renderAgents(zone) {
             const agentsEl = document.getElementById(`agents-${zone}`);
             const agents = data[currentTab][zone].agents || [];
@@ -3314,6 +3734,8 @@
             refreshIcons();
         }
 
+        // addAgent() — Ajoute un agent vide à la zone (statut 'en-cours' par défaut ;
+        // champ prend089 ajouté seulement en nuit-matin). Redessine la zone + sauvegarde.
         function addAgent(zone) {
             if (!data[currentTab][zone].agents) data[currentTab][zone].agents = [];
             const newAgent = {nom: '', panne: '', heureDebut: '', heureFin: '', notes: '', statut: 'en-cours'};
@@ -3323,27 +3745,34 @@
             saveData();
         }
 
+        // deleteAgent() — Supprime l'agent à l'index donné, redessine, sauvegarde.
         function deleteAgent(zone, index) {
             data[currentTab][zone].agents.splice(index, 1);
             renderAgents(zone);
             saveData();
         }
 
+        // updateAgent() — Met à jour un champ d'un agent et sauvegarde. On ne redessine
+        // QUE si le changement modifie l'affichage de la ligne (statut → montre/cache le
+        // champ heure ; heureDebut/Fin ; toggle 089). Pour le nom/panne/notes, pas de
+        // redessin → on ne perd pas le focus pendant la frappe.
         function updateAgent(zone, index, field, value) {
             data[currentTab][zone].agents[index][field] = value;
             saveData();
-            // Re-render si changement de statut (pour afficher/cacher l'input heure)
-            // ou si toggle 089 (pour mettre à jour la coche)
             if (field === 'heureDebut' || field === 'heureFin' || field === 'statut' || field === 'prend089') {
                 renderAgents(zone);
             }
         }
 
+        // updateField() — Met à jour un champ texte de zone (reports, chantiers, notes
+        // libres) et sauvegarde. Pas de redessin (frappe fluide).
         function updateField(zone, field, value) {
             data[currentTab][zone][field] = value;
             saveData();
         }
 
+        // nouveau() — Vide le formulaire pour démarrer une nouvelle passation (après
+        // confirmation). Réinitialise les données ET le champ rédacteur.
         function nouveau() {
             if (confirm('Créer une nouvelle passation ? Toutes les données non sauvegardées seront perdues.')) {
                 data = initData();
@@ -3353,9 +3782,13 @@
             }
         }
 
-        // Enregistre la passation en remplaçant une éventuelle entrée récente
-        // du même cycle (currentTab) et même rédacteur (< 16h)
-        // pour éviter d'accumuler 5 sauvegardes d'un même quart de nuit.
+        // enregistrerPassation() — Enregistre la passation courante dans l'historique.
+        // ANTI-DOUBLON : si une passation du MÊME quart par le MÊME rédacteur existe déjà
+        // depuis moins de 16h, on la REMPLACE (en gardant son id d'origine) au lieu d'en
+        // empiler une nouvelle — évite d'accumuler 5 versions d'un même quart de nuit.
+        // Renvoie true si c'était un remplacement (utilisé pour le message à l'utilisateur).
+        // NB : l'historique local est plafonné à 50 ici, alors que la couche distante
+        // (sauverHistorique) plafonne à 25 — le local est donc volontairement plus profond.
         function enregistrerPassation(redacteur) {
             const maintenant = Date.now();
             const SEUIL_FUSION_MS = 16 * 60 * 60 * 1000;
@@ -3386,6 +3819,8 @@
             return remplacee;
         }
 
+        // sauvegarder() — Bouton "Enregistrer". Vérifie qu'un rédacteur est renseigné,
+        // puis enregistre dans l'historique (avec message adapté création/mise à jour).
         function sauvegarder() {
             const redacteur = document.getElementById('redacteur').value.trim();
             if (!redacteur) {
@@ -3396,6 +3831,25 @@
             toast(remplacee ? 'Passation mise à jour' : 'Passation enregistrée', 'success');
         }
 
+        // ════════════════════════════════════════════════════════════════════════════
+        // exporterPDF() — Génère le PDF de passation (jsPDF) et l'enregistre dans l'historique.
+        //
+        // C'est la fonction la plus longue du fichier. Le PDF est dessiné "à la main" en
+        // coordonnées millimétriques (A4 portrait), sans librairie de mise en page. Logique :
+        //   1. Constantes de couleurs (palette Enedis) et de géométrie (marges, header…).
+        //   2. Sous-fonctions de dessin :
+        //        • fillRect / setFont  → helpers bas niveau
+        //        • dessinerHeader      → bandeau bleu en haut de chaque page
+        //        • dessinerFooter      → pied de page (rédacteur, agence, n° de page)
+        //        • buildZoneBlocks     → TRANSFORME les données d'une zone en "blocs"
+        //                                abstraits (agents / texte / flag) à dessiner
+        //        • renderZoneBlock     → DESSINE ces blocs, en gérant les sauts de page
+        //   3. Boucle sur les zones, empilées verticalement, avec saut de page au besoin.
+        //   4. Pied de page ajouté sur toutes les pages, puis doc.save().
+        //
+        // Gestion des sauts de page : MANUELLE. Avant chaque bloc/ligne, on teste si le
+        // curseur vertical yy dépasse CONTENT_BOTTOM ; si oui, addPage() + redessine header.
+        // ════════════════════════════════════════════════════════════════════════════
         function exporterPDF() {
             const redacteur = document.getElementById('redacteur').value.trim();
             if (!redacteur) {
@@ -3487,7 +3941,15 @@
             };
 
             // ─── Préparation des données par zone ───
-            // On précalcule la hauteur nécessaire de chaque zone pour adapter la taille de police
+            // buildZoneBlocks() — Transforme les données brutes d'une zone en une liste de
+            // "blocs" abstraits, prêts à dessiner. Trois sortes de blocs :
+            //   • { kind:'flag'   } → bandeau d'alerte (ex. AMTI à appeler)
+            //   • { kind:'agents' } → liste d'agents normalisés (nom/panne/horaire/notes/089)
+            //   • { kind:'text'   } → bloc de texte libre (reports, chantiers, notes)
+            // L'horaire de l'agent est calculé selon son statut (heure de fin / en cours /
+            // sur le retour), avec le même fallback rétro-compat que dans l'UI.
+            // Cette séparation données→blocs permet à renderZoneBlock de ne s'occuper que
+            // du dessin et des sauts de page.
             function buildZoneBlocks(zone) {
                 const zd = data[currentTab][zone] || {};
                 const blocks = [];
@@ -3553,7 +4015,15 @@
                 return blocks;
             }
 
-            // ─── Rendu d'une zone empilée (pleine largeur) ───
+            // ─── Rendu d'une zone (pleine largeur, empilée) ───
+            // renderZoneBlock() — Dessine une zone à partir de la position verticale yStart
+            // et RENVOIE la nouvelle position y après la zone (pour empiler la suivante).
+            //   • Bandeau de titre de zone (nom + n° département).
+            //   • "— RAS —" si la zone est vide.
+            //   • Sinon, dessine chaque bloc (agents / texte / flag) en testant AVANT chaque
+            //     élément si on doit sauter de page (yy > CONTENT_BOTTOM → addPage + header).
+            // `fontScale` permettrait d'ajuster globalement la taille de police (vaut 1.0
+            // aujourd'hui ; on préfère sauter en page suivante plutôt que de rapetisser).
             function renderZoneBlock(zone, x, yStart, w, fontScale) {
                 let yy = yStart;
 
@@ -3715,28 +4185,38 @@
             toast('PDF exporté et passation enregistrée', 'success');
         }
 
+        // toggleDarkMode() — Bascule le thème clair/sombre et mémorise le choix en local.
         function toggleDarkMode() {
             document.body.classList.toggle('dark');
             localStorage.setItem('darkMode', document.body.classList.contains('dark'));
         }
 
         // ========== HISTORIQUE ==========
+        // typesLabel — Libellés affichables des quarts (avec flèches). Utilisé dans toute
+        // la partie historique/UI. Pendant du mapping interne→affiché décrit en section 1.
         const typesLabel = {
             'soir-nuit': 'APRÈS-MIDI → NUIT',
             'nuit-matin': 'NUIT → MATIN',
             'matin-soir': 'MATIN → APRÈS-MIDI'
         };
 
+        // ouvrirHistorique() — Ouvre la modale historique (vide l'aperçu, redessine la liste).
         function ouvrirHistorique() {
             document.getElementById('historique-preview').innerHTML = '';
             renderHistorique();
             document.getElementById('modal-historique').classList.add('open');
         }
 
+        // fermerHistorique() — Ferme la modale historique.
         function fermerHistorique() {
             document.getElementById('modal-historique').classList.remove('open');
         }
 
+        // renderHistorique() — Dessine la liste des passations enregistrées (la plus
+        // récente en haut). Chaque entrée a un attribut data-search pré-calculé (texte
+        // minuscule concaténant type/rédacteur/date/contenu) qui sert au filtre de recherche.
+        // Trois actions par entrée : Voir (aperçu), Charger (réinjecte dans le formulaire),
+        // Supprimer.
         function renderHistorique() {
             const liste = document.getElementById('historique-liste');
             const historique = lireHistorique();
@@ -3766,7 +4246,9 @@
             refreshIcons();
         }
 
-        // Extrait un texte cherchable depuis une passation (agents, pannes, notes)
+        // extraireSearchableText() — Aplati le contenu d'une passation (noms d'agents,
+        // pannes, notes, reports, chantiers…) en une seule chaîne, pour alimenter la
+        // recherche dans l'historique. Tolérant aux données partielles (try/catch).
         function extraireSearchableText(p) {
             const parts = [];
             try {
@@ -3786,6 +4268,9 @@
             return parts.join(' ');
         }
 
+        // voirPassation() — Construit un APERÇU texte lisible d'une passation enregistrée
+        // (par zone : agents, reports, chantiers, notes, ou "RAS" si vide) et l'affiche
+        // dans le panneau d'aperçu de la modale. Lecture seule — ne modifie rien.
         function voirPassation(id) {
             const historique = lireHistorique();
             const p = historique.find(x => x.id === id);
@@ -3836,6 +4321,9 @@
             `;
         }
 
+        // chargerPassation() — Réinjecte une passation de l'historique DANS le formulaire
+        // (après confirmation) : bascule sur le bon onglet, copie profonde des données,
+        // restaure le rédacteur. Écrase les données actuelles de cet onglet.
         function chargerPassation(id) {
             if (!confirm('Charger cette passation dans le formulaire ? Les données actuelles de l\'onglet seront remplacées.')) return;
             const historique = lireHistorique();
@@ -3857,6 +4345,8 @@
             fermerHistorique();
         }
 
+        // supprimerPassation() — Retire définitivement une passation de l'historique
+        // (après confirmation), met à jour le distant + le local, et rafraîchit la liste.
         function supprimerPassation(id) {
             if (!confirm('Supprimer définitivement cette passation ?')) return;
             let historique = lireHistorique();
@@ -3866,12 +4356,20 @@
             document.getElementById('historique-preview').innerHTML = '';
         }
 
-        // Fermer la modale en cliquant en dehors
+        // Ferme la modale historique si on clique sur le fond (en dehors du contenu).
         document.getElementById('modal-historique').addEventListener('click', (e) => {
             if (e.target.id === 'modal-historique') fermerHistorique();
         });
 
-        // ========== COPIE TEAMS ==========
+        // ════════════════════════════════════════════════════════════════════════════
+        // copierZone() — Génère le texte "format maison" d'une zone et le copie dans le
+        // presse-papier, prêt à coller dans Microsoft Teams. C'est le pont entre l'appli
+        // et le canal de communication réel de l'équipe.
+        // Le format (titres, puces, libellés, badge [PREND SON 089]) est calibré pour
+        // rendre proprement dans Teams. Adapte le contenu au quart courant. Fallback via
+        // execCommand si l'API clipboard moderne échoue (anciens navigateurs / contexte
+        // non sécurisé).
+        // ════════════════════════════════════════════════════════════════════════════
         function copierZone(zone) {
             const zd = data[currentTab][zone];
             const now = new Date();
@@ -3966,6 +4464,7 @@
             });
         }
 
+        // Raccourci clavier : F9 = export PDF direct (pratique pour l'agent pressé en relève).
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F9') {
                 e.preventDefault();
@@ -3974,10 +4473,14 @@
         });
 
         // ════════════════════════════════════════════════════════
-        // PHASE 2 — Helpers UI (durée, compte à rebours, sauvegarde, etc.)
+        // PHASE 2 — Helpers UI live (durée, compte à rebours, indicateur de sauvegarde)
+        // Ces éléments se rafraîchissent tout seuls via tickGlobal (toutes les 30s).
         // ════════════════════════════════════════════════════════
 
-        // ─── Indicateur sauvegarde ───
+        // ─── Indicateur de sauvegarde ───
+        // marquerSauvegarde() — Mémorise l'instant de la dernière sauvegarde et affiche
+        // "Sauvegardé". tickSaveIndicator() transforme ensuite ce timestamp en texte
+        // relatif ("il y a 12s", "il y a 3 min"…) au fil du temps.
         let lastSaveTs = 0;
         function marquerSauvegarde() {
             lastSaveTs = Date.now();
@@ -3999,6 +4502,9 @@
         }
 
         // ─── Compte à rebours fin de quart ───
+        // majCompteARebours() — Affiche le temps restant avant la relève du quart courant
+        // (heures de fin dans SHIFT_END). Si l'heure de fin est déjà passée aujourd'hui,
+        // on vise demain. Passe en style 'urgent' (≤1h) puis 'overdue' (≤15 min).
         function majCompteARebours() {
             const el = document.getElementById('countdown');
             if (!el) return;
@@ -4023,6 +4529,11 @@
         }
 
         // ─── Durée d'intervention live ───
+        // renderDureeIntervention() — Pour un agent EN COURS avec une heure de début,
+        // calcule depuis combien de temps il est sorti et renvoie le HTML du badge.
+        // Gère le passage de minuit (si l'heure de début est "dans le futur", c'était hier).
+        // Code couleur : 'warn' ≥ 3h, 'alert' ≥ 4h (agent dehors depuis longtemps).
+        // Renvoie une cellule vide si l'agent n'est pas en cours ou n'a pas d'heure.
         function renderDureeIntervention(agent, statut) {
             if (!agent.heureDebut || statut !== 'en-cours') return '<div class="col-duree"></div>';
             const [hh, mm] = agent.heureDebut.split(':').map(Number);
@@ -4043,7 +4554,11 @@
             return `<div class="col-duree ${cls}"><i data-lucide="clock"></i> ${esc(txt)}</div>`;
         }
 
-        // Tick principal : compte à rebours + sauvegardé + durées
+        // tickGlobal() — Battement régulier (toutes les 30s) qui rafraîchit les éléments
+        // "vivants" SANS tout redessiner : indicateur de sauvegarde, compte à rebours, et
+        // les durées d'intervention. Pour les durées, on remplace UNIQUEMENT le contenu
+        // des .col-duree (en relisant heure de début + statut depuis les data-attributs de
+        // la ligne) — voir section 7 du plan : on touche le minimum de DOM.
         function tickGlobal() {
             tickSaveIndicator();
             majCompteARebours();
@@ -4067,7 +4582,10 @@
             refreshIcons();
         }
 
-        // ─── Sticky-note du quart ───
+        // ─── Pense-bête perso du quart ───
+        // updateStickyNote() — Sauvegarde la note perso d'une zone. Rappel : cette note
+        // est PRIVÉE — jamais transmise dans Teams ni exportée dans le PDF (voir le label
+        // dans renderZones). C'est un mémo pour l'agent en poste, point.
         function updateStickyNote(zone, value) {
             if (!data[currentTab][zone]) return;
             data[currentTab][zone].stickyNote = value;
@@ -4075,6 +4593,12 @@
         }
 
         // ─── Reprise du cycle précédent ───
+        // reprendreCyclePrecedent() — "Reprendre passation entrante". Récupère la passation
+        // la plus récente du quart PRÉCÉDENT (CYCLE_PRECEDENT) et en importe ce qui a du sens
+        // pour le quart courant, après confirmation :
+        //   • on GARDE les agents encore dehors (statut ≠ 'heure', donc en cours / retour)
+        //   • on RETIRE ce qui ne se reprend pas : reports CAD, chantiers NOK, flag AMTI
+        // Évite à l'agent entrant de ressaisir les interventions toujours actives.
         function reprendreCyclePrecedent() {
             const precedent = CYCLE_PRECEDENT[currentTab];
             if (!precedent) { toast('Aucun cycle précédent défini', 'error'); return; }
@@ -4112,7 +4636,10 @@
             toast(`Passation entrante chargée (${candidate.agents?.length || 0} agents repris)`, 'success');
         }
 
-        // ─── Auto-complétion BI-INC depuis l'historique 30 derniers jours ───
+        // ─── Auto-complétion des pannes (BI-INC…) ───
+        // rafraichirDatalistPannes() — Alimente la datalist du champ "Panne" avec les
+        // références de panne saisies dans les 30 derniers jours (toutes zones confondues).
+        // Évite de retaper un numéro BI-INC déjà connu.
         function rafraichirDatalistPannes() {
             const dl = document.getElementById('pannes-recentes');
             if (!dl) return;
@@ -4131,7 +4658,10 @@
             dl.innerHTML = [...pannes].sort().map(p => `<option value="${esc(p)}">`).join('');
         }
 
-        // ─── Favoris agents : top noms récurrents par zone ───
+        // ─── Favoris agents par zone ───
+        // rafraichirDatalistAgents() — Pour chaque zone, propose en autocomplétion les noms
+        // d'agents les plus fréquents sur les 90 derniers jours (top 15). Une datalist par
+        // zone (id agents-favoris-<zone>), car les agents ne sont pas les mêmes partout.
         function rafraichirDatalistAgents() {
             const historique = lireHistorique();
             const seuilMs = 90 * 24 * 60 * 60 * 1000;
@@ -4155,7 +4685,13 @@
             });
         }
 
-        // ─── Dictée vocale Web Speech API ───
+        // ─── Dictée vocale (Web Speech API) ───
+        // dicterNotes() — Dicte les notes d'un agent à la voix (fr-FR). Re-cliquer sur le
+        // micro arrête l'écoute. Mode continu + résultats intermédiaires : le texte
+        // s'écrit en temps réel pendant qu'on parle, en s'ajoutant à ce qui était déjà là.
+        // À la fin, on persiste via updateAgent. Affiche un message si le navigateur ne
+        // supporte pas l'API (Firefox notamment). currentRecognition garantit une seule
+        // dictée active à la fois.
         let currentRecognition = null;
         function dicterNotes(btnEl, zone, idx) {
             // Si déjà en cours sur ce bouton, on arrête
@@ -4205,7 +4741,10 @@
             toast('Dictée en cours… reclique pour arrêter', 'info', 2000);
         }
 
-        // ─── Recherche dans historique ───
+        // ─── Recherche dans l'historique ───
+        // filtrerHistorique() — Filtre les entrées de l'historique selon la saisie : chaque
+        // mot tapé doit être présent dans le data-search de l'entrée (recherche ET, insensible
+        // à la casse). Masque/affiche par CSS, sans toucher aux données.
         function filtrerHistorique() {
             const q = (document.getElementById('historique-search-input')?.value || '').toLowerCase().trim();
             document.querySelectorAll('.historique-item').forEach(item => {
@@ -4217,11 +4756,19 @@
             });
         }
 
-        // Restaurer le mode sombre et les données
+        // ════════════════════════════════════════════════════════════════════════════
+        // INITIALISATION AU CHARGEMENT (s'exécute immédiatement — voir section 4 du plan)
+        // ════════════════════════════════════════════════════════════════════════════
+
+        // 1. Restaure le thème sombre si l'utilisateur l'avait activé.
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark');
         }
 
+        // 2. Recharge les saisies en cours depuis localStorage, en les FUSIONNANT avec une
+        //    structure fraîche : migrateData met à niveau les vieux formats, puis on complète
+        //    zone par zone (champs manquants comblés par les défauts, zones absentes
+        //    initialisées proprement). En cas de JSON corrompu, on repart d'une base vierge.
         const savedData = localStorage.getItem('passation_data');
         if (savedData) {
             try {
@@ -4242,33 +4789,37 @@
             } catch(e) { data = initData(); }
         }
 
+        // 3. Applique la config et dessine l'interface complète.
         appliquerConfig();
         rafraichirDatalistSED();
         renderZones();
         refreshIcons();
 
-        // Initialisation des indicateurs live
+        // 4. Démarre les indicateurs live et le battement régulier (toutes les 30s).
         marquerSauvegarde();
         majCompteARebours();
-        // Tick toutes les 30s pour rafraîchir compte à rebours, sauvegardé, durées
         setInterval(tickGlobal, 30000);
-        // Premier tick rapide à 2s pour que tout s'aligne
-        setTimeout(tickGlobal, 2000);
+        setTimeout(tickGlobal, 2000); // premier tick rapide pour aligner l'affichage
 
-        // Chargement depuis JSONBin (données partagées entre tous les postes)
+        // 5. Charge l'historique partagé distant, puis rafraîchit les autocomplétions
+        //    (qui dépendent de l'historique).
         chargerDepuisJsonBin().then(() => {
             rafraichirDatalistPannes();
             rafraichirDatalistAgents();
         });
 
-        // ─── Enregistrement Service Worker (PWA) ───
+        // 6. Enregistre le Service Worker (mode PWA / hors-ligne — voir sw.js). Ignoré si
+        //    la page est ouverte en file:// (le SW exige http/https).
         if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.info('[PWA] Service Worker enregistré'))
                 .catch(err => console.warn('[PWA] Échec SW:', err));
         }
 
-        // ─── Polling JSONBin temps réel : refresh historique toutes les 60s ───
+        // 7. Synchro "temps réel" douce : toutes les 60s, on relit l'historique distant et,
+        //    s'il a changé (comparaison des ids), on fusionne silencieusement avec le local
+        //    et on rafraîchit l'affichage. C'est ce qui fait apparaître les passations
+        //    saisies sur les autres postes sans recharger la page.
         let dernierHistoriqueSerialise = '';
         async function pollerHistoriqueDistant() {
             try {
@@ -4297,10 +4848,12 @@
         setInterval(pollerHistoriqueDistant, 60000);
 
         // ════════════════════════════════════════════════════════
-        // ANIMATIONS — Ripple + Confetti + Spotlight tracking
+        // ANIMATIONS — Effets visuels décoratifs (sans impact fonctionnel)
+        // Ripple au clic · Spotlight qui suit la souris · Confettis de réussite
         // ════════════════════════════════════════════════════════
 
-        // --- Ripple effect global ---
+        // Ripple : petite onde au point de clic sur les boutons (effet "material").
+        // Exclut quelques boutons où l'effet gênerait (onglets config, toggle checklist).
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn || btn.disabled) return;
@@ -4316,7 +4869,8 @@
             setTimeout(() => ripple.remove(), 700);
         });
 
-        // --- Spotlight tracking : suit la souris dans chaque .zone ---
+        // Spotlight : suit la souris dans chaque carte (.zone / .checklist-wrapper) via
+        // des variables CSS --mx/--my que le CSS exploite pour un léger halo lumineux.
         document.addEventListener('mousemove', (e) => {
             const zone = e.target.closest('.zone, .checklist-wrapper');
             if (!zone) return;
@@ -4325,7 +4879,8 @@
             zone.style.setProperty('--my', (e.clientY - rect.top) + 'px');
         });
 
-        // --- Confetti burst ---
+        // Confettis : éclat de particules colorées, déclenché quand une checklist passe
+        // à 100% coché (appelé depuis toggleCheck). Pure récompense visuelle. 🎉
         const CONFETTI_COLORS = ['#1f5aa8', '#3b7dd8', '#00a85a', '#f59100', '#dc3545', '#ffd166'];
         function fireConfetti(host) {
             if (!host) return;
